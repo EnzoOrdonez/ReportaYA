@@ -1,0 +1,42 @@
+00:00 +0: loading /root/w/fe/test/api_config_test.dart
+00:00 +0: /root/w/fe/test/api_config_test.dart: ApiConfig.normalizar agrega esquema y sufijo /api
+00:00 +1: /root/w/fe/test/api_config_test.dart: ApiConfig.normalizar respeta https y quita barras finales
+00:00 +2: /root/w/fe/test/api_config_test.dart: ApiConfig.normalizar no duplica /api
+00:00 +3: /root/w/fe/test/api_config_test.dart: ApiConfig.resolverUrlFoto URL absoluta queda igual
+00:00 +4: /root/w/fe/test/api_config_test.dart: ApiConfig.resolverUrlFoto asset de demo queda igual
+00:00 +5: /root/w/fe/test/api_config_test.dart: ApiConfig.resolverUrlFoto ruta del backend se resuelve contra el servidor actual
+00:00 +6: loading /root/w/fe/test/unit/api_client_test.dart
+00:00 +6: /root/w/fe/test/unit/api_client_test.dart: devuelve el JSON de una respuesta 2xx
+00:00 +7: /root/w/fe/test/unit/api_client_test.dart: usa el mensaje {"error": ...} del backend
+00:00 +8: /root/w/fe/test/unit/api_client_test.dart: traduce 403 sin cuerpo a un mensaje legible
+00:00 +9: /root/w/fe/test/unit/api_client_test.dart: una pagina HTML de error (502) no rompe la app
+00:00 +10: /root/w/fe/test/unit/api_client_test.dart: sin red devuelve un mensaje de conexion
+00:00 +11: /root/w/fe/test/unit/api_client_test.dart: getTodasLasPaginas recorre las paginas hasta last=true
+00:00 +12: /root/w/fe/test/unit/api_client_test.dart: getTodasLasPaginas entiende el formato {"page":{"totalPages":N}}
+00:00 +13: loading /root/w/fe/test/unit/modelos_test.dart
+00:01 +13: /root/w/fe/test/unit/modelos_test.dart: (setUpAll)
+00:01 +13: /root/w/fe/test/unit/modelos_test.dart: ReporteResponse lee la respuesta real del backend
+00:01 +14: /root/w/fe/test/unit/modelos_test.dart: HistorialEstado lee el historial real (el primer cambio no tiene estado anterior)
+00:01 +15: /root/w/fe/test/unit/modelos_test.dart: campos opcionales ausentes toman valores por defecto sin lanzar excepciones
+00:01 +16: /root/w/fe/test/unit/modelos_test.dart: etiquetas de los cinco tipos de problema
+00:01 +17: /root/w/fe/test/unit/modelos_test.dart: formato de fechas en espanol y tolerancia a texto invalido
+00:01 +18: /root/w/fe/test/unit/modelos_test.dart: (tearDownAll)
+00:01 +18: loading /root/w/fe/test/despertador_test.dart
+00:01 +18: /root/w/fe/test/despertador_test.dart: marca despierto cuando /salud responde 200
+00:01 +19: /root/w/fe/test/despertador_test.dart: backend sin /salud (404) no se marca despierto ni deja el aviso
+00:01 +20: /root/w/fe/test/despertador_test.dart: sin red no lanza excepcion
+00:01 +21: loading /root/w/fe/test/widget/accesibilidad_test.dart
+00:02 +21: /root/w/fe/test/widget/accesibilidad_test.dart: (setUpAll)
+00:02 +21: /root/w/fe/test/widget/accesibilidad_test.dart: Login: los campos vacios muestran el mensaje de obligatorio
+00:03 +22: /root/w/fe/test/widget/accesibilidad_test.dart: Registro: DNI, telefono, correo y contrasena invalidos muestran su mensaje
+00:03 +23: /root/w/fe/test/widget/accesibilidad_test.dart: Login en 360 x 640 con texto al 100 % sin desbordes
+00:03 +24: /root/w/fe/test/widget/accesibilidad_test.dart: Registro en 360 x 640 con texto al 100 % sin desbordes
+00:03 +25: /root/w/fe/test/widget/accesibilidad_test.dart: Login en 360 x 640 con texto al 200 % sin desbordes
+00:04 +25 -1: /root/w/fe/test/widget/accesibilidad_test.dart: Login en 360 x 640 con texto al 200 % sin desbordes [E]
+00:04 +25 -1: /root/w/fe/test/widget/accesibilidad_test.dart: Registro en 360 x 640 con texto al 200 % sin desbordes
+00:04 +26 -1: /root/w/fe/test/widget/accesibilidad_test.dart: Login: los botones tienen etiqueta y area tactil de 48 dp (pautas de Android)
+00:04 +26 -2: /root/w/fe/test/widget/accesibilidad_test.dart: Login: los botones tienen etiqueta y area tactil de 48 dp (pautas de Android) [E]
+00:04 +26 -2: /root/w/fe/test/widget/accesibilidad_test.dart: Login: contraste del texto (WCAG 2.1, 4.5:1)
+00:04 +26 -3: /root/w/fe/test/widget/accesibilidad_test.dart: Login: contraste del texto (WCAG 2.1, 4.5:1) [E]
+00:04 +26 -3: /root/w/fe/test/widget/accesibilidad_test.dart: (tearDownAll)
+00:04 +26 -3: Some tests failed.

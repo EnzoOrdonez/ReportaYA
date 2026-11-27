@@ -1,0 +1,52 @@
+# Referencia: Blueprint usado para el despliegue en Render (repo EnzoOrdonez/reportaya-api).
+# En este monorepo el backend vive en backend/: para reutilizarlo, mover este archivo a la raiz
+# del repositorio y agregar "rootDir: backend" al servicio web.
+# Blueprint de Render: backend (Docker, plan gratis) + PostgreSQL gratis.
+# Render > New > Blueprint > este repo. Lo crea todo y genera JWT_SECRET solo.
+# Ojo: la Postgres gratis de Render vence 30 dias despues de creada
+# (ver docs/DESPLIEGUE-NUBE.md para pasar a Neon antes de esa fecha).
+services:
+  - type: web
+    name: reportaya-api
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /salud
+    autoDeployTrigger: commit
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: reportaya-db
+          property: connectionString
+      # Version web de la app (GitHub Pages). Lista separada por comas.
+      - key: APP_CORS_ALLOWED_ORIGINS
+        value: "https://enzoordonez.github.io,http://localhost:*,http://127.0.0.1:*"
+      # Sin dominio verificado en Resend los correos no llegan a terceros,
+      # asi que las cuentas nuevas nacen activas.
+      - key: APP_VERIFICAR_CORREO
+        value: "false"
+      # Correo por Brevo (API HTTP; Render gratis bloquea SMTP). Valores cargados a mano en
+      # Render > reportaya-api > Environment: la clave de API y un remitente verificado en Brevo.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      # Hashes BCrypt del operador y de los tecnicos iniciales (no son las claves).
+      # Render los pide al crear el Blueprint; ver docs/DESPLIEGUE-NUBE.md.
+      - key: APP_SEED_OPERADOR_HASH
+        sync: false
+      - key: APP_SEED_TECNICO_HASH
+        sync: false
+
+databases:
+  - name: reportaya-db
+    plan: free
+    region: virginia
+    databaseName: reportaya
+    user: reportaya
+    postgresMajorVersion: "17"
+    # Solo red privada de Render (el backend). Para migrar a Neon, abrirla temporalmente.
+    ipAllowList: []

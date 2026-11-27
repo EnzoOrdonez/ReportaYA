@@ -1,0 +1,51 @@
+@startuml
+title CU-03 · Recuperar contrasena
+skinparam maxMessageSize 160
+autonumber
+
+actor Usuario
+boundary "Vista 01 Login\n(LoginScreen)" as V1
+boundary "Vista 08 Recuperar contrasena\n(RecoverPasswordScreen)" as V8
+boundary "Vista 09 Restablecer contrasena\n(ResetPasswordScreen)" as V9
+participant "ServicioAuth" as SvcAuth
+database "LocalStore\n(cuentas.json)" as DB
+
+group Flujo Principal y Escenario 1: Solicitud de recuperacion
+    Usuario -> V1: clic en "Olvidaste tu contrasena?"
+    V1 -> V8: Get.toNamed(/recover-password)
+    Usuario -> V8: Ingresa correo electronico y clic "Enviar"
+    V8 -> SvcAuth: solicitarRecuperacion(correo)
+    SvcAuth -> DB: busca cuenta por correo\n(ignore case)
+    DB --> SvcAuth: existe / no existe
+
+    alt Correo asociado a una cuenta
+        SvcAuth --> V8: ok
+        V8 -> V8: muestra AlertDialog\n(simula llegada del enlace al correo)
+        note over V8: En entrega 3/4 se envia correo real\nmediante Firebase Auth
+        Usuario -> V8: clic "Abrir enlace" en el AlertDialog
+        V8 -> V9: Get.toNamed(/reset-password)\narguments: correo
+    else Correo no asociado a ninguna cuenta (Escenario 1)
+        SvcAuth --> V8: Exception "Correo no asociado a ninguna cuenta"
+        V8 --> Usuario: AppToast.error con el motivo
+    end
+end
+
+group Flujo Principal y Escenario 2: Restablecimiento
+    Usuario -> V9: Ingresa nueva contrasena y confirmacion
+    Usuario -> V9: clic "Restablecer contrasena"
+    V9 -> SvcAuth: restablecerContrasena(correo, nuevaPass, confirmacion)
+    SvcAuth -> SvcAuth: valida que nuevaPass == confirmacion
+    SvcAuth -> SvcAuth: valida longitud minima 6 caracteres
+
+    alt Contrasenas validas
+        SvcAuth -> DB: cuentas[i].contrasena = nuevaPass
+        DB --> SvcAuth: ok
+        SvcAuth --> V9: exito
+        V9 -> V9: AppToast.success\nGet.offAllNamed(/login)
+        V9 --> Usuario: Redirige a Vista 01 Login
+    else Contrasenas no coinciden (Escenario 2)
+        SvcAuth --> V9: Exception "Las contrasenas no coinciden"
+        V9 --> Usuario: AppToast.error con el motivo
+    end
+end
+@enduml

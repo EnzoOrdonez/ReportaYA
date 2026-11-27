@@ -1,0 +1,32 @@
+{
+    "id": 1040,
+    "titulo": "Acumulacion de basura",
+    "descripcion": "Punto de acopio improvisado lleva 3 dias sin recojo. Mal olor y presencia de roedores.",
+    "cuentaId": 1,
+    "nombreCiudadano": "Ana Quispe",
+    "estado": "PENDIENTE",
+    "tipoProblema": "RESIDUOS",
+    "fechaCreacion": "2026-04-26T14:05:00",
+    "fechaActualizacion": "2026-04-26T14:05:00",
+    "ubicacion": {
+        "id": 3,
+        "latitud": -12.0721,
+        "longitud": -77.0632,
+        "direccion": "Av. Brasil 800, Pueblo Libre",
+        "fechaRegistro": null
+    },
+    "fotos": [
+        {
+            "id": 4,
+            "reporteId": 1040,
+            "url": "assets/img/sample/basura_1.png",
+            "tipo": "INICIAL",
+            "descripcion": "Acumulacion",
+            "fechaCarga": "2026-04-26T14:05:00"
+        }
+    ],
+    "comentarioResolucion": null,
+    "fechaCierre": null,
+    "tecnicoAsignadoId": null,
+    "tecnicoNombre": null
+}

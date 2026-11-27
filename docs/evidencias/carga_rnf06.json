@@ -1,0 +1,30 @@
+{
+  "usuarios": 50,
+  "segundos": 60,
+  "consultas": 10959,
+  "errores": 0,
+  "rps": 182.7,
+  "p50_ms": 227,
+  "p95_ms": 694,
+  "p99_ms": 916,
+  "max_ms": 1648,
+  "dentro_de_3s_pct": 100.0,
+  "por_operacion": {
+    "mis_reportes": {
+      "n": 2728,
+      "p95_ms": 663
+    },
+    "detalle": {
+      "n": 2784,
+      "p95_ms": 644
+    },
+    "bandeja_operador": {
+      "n": 2706,
+      "p95_ms": 704
+    },
+    "mapa": {
+      "n": 2741,
+      "p95_ms": 745
+    }
+  }
+}

@@ -1,0 +1,47 @@
+@startuml
+title CU-01 · Iniciar Sesion
+skinparam maxMessageSize 160
+autonumber
+
+actor Usuario
+boundary "Vista 01 Login\n(LoginScreen)" as V1
+boundary "Vista 02 Inicio\n(InicioScreen)" as V2
+boundary "Vista 01 Cola de reportes\n(HomeScreenOperador)" as VC
+boundary "Vista 01 Mis asignaciones\n(HomeScreenTecnico)" as VM
+control "AuthController" as AuthCtrl
+participant "ServicioAuth" as SvcAuth
+database "LocalStore\n(cuentas.json)" as DB
+
+group Flujo Principal y Escenarios alternativos
+    Usuario -> V1: Ingresa usuario y contrasena\nclic "Iniciar sesion"
+    V1 -> AuthCtrl: login(usuario, pass)
+    AuthCtrl -> SvcAuth: login(usuario, pass)
+    SvcAuth -> DB: busca cuenta por usuario\n(case-insensitive)
+    DB --> SvcAuth: CuentaResponse
+
+    alt Credenciales validas
+        SvcAuth -> SvcAuth: valida contrasena (case-sensitive)
+        SvcAuth --> AuthCtrl: AuthLoginResponse + tipoCuenta
+        AuthCtrl -> AuthCtrl: GetStorage.write(UsuarioAutenticado)\nTTL 24h
+        AuthCtrl --> V1: exito + tipoCuenta
+        alt Rol Ciudadano
+            V1 -> V2: Get.offAllNamed(/main)
+            V2 --> Usuario: Muestra Vista 02 Inicio
+        else Rol Operador de Oficina Municipal
+            V1 -> VC: Get.offAllNamed(/operador)
+            VC --> Usuario: Muestra Cola de reportes
+        else Rol Tecnico de Campo Municipal
+            V1 -> VM: Get.offAllNamed(/tecnico)
+            VM --> Usuario: Muestra Mis asignaciones
+        end
+    else Credenciales incorrectas (Escenario 1)
+        SvcAuth --> AuthCtrl: Exception "Usuario o contrasena incorrectos"
+        AuthCtrl --> V1: error
+        V1 --> Usuario: AppToast.error · muestra error e invita a reintentar
+    else Usuario no registrado (Escenario 2)
+        SvcAuth --> AuthCtrl: Exception "El usuario no esta registrado"
+        AuthCtrl --> V1: error
+        V1 --> Usuario: AppToast.error · muestra error y sugiere registrarse
+    end
+end
+@enduml
