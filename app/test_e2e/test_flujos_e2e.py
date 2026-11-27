@@ -6,7 +6,7 @@ Requisitos: backend local con db/llenar-TABLAS.sql y la web servida, por ejemplo
     REPORTAYA_WEB=http://127.0.0.1:8080/ pytest test_e2e -v
 Cada prueba guarda capturas en test_e2e/capturas/. Las pruebas comparten estado y van en orden.
 """
-import os, random, string
+import os, random, string, time
 from pathlib import Path
 import pytest
 from ui import (sync_playwright, abrir, activar_semantica, nodos, buscar, esperar_texto, clic, escribir, foto, login, tocar, desplazar)
@@ -82,10 +82,15 @@ def test_e2e03_ciudadano_reporta(p):
     esperar_texto(pg, "Enviar reporte")
     escribir(pg, "Ej. Hueco en la pista", DATOS["titulo"])
     clic(pg, "Alumbrado")
-    escribir(pg, "Describe la incidencia", "El poste de la esquina del parque esta apagado desde hace tres noches.")
+    escribir(pg, "Describe la incidencia", "El poste de la esquina del parque está apagado desde hace tres noches.")
     mapa = buscar(pg, "Mapa. Toca para marcar", exacto=False)
     tocar(pg, mapa["x"] + 25, mapa["y"] + 15)
-    esperar_texto(pg, "Lima", 30)
+    # Con Nominatim disponible aparece la direccion ("Lima, Lima"); si el servicio publico
+    # limita las consultas, la app muestra las coordenadas y el reporte se puede enviar igual.
+    fin = time.time() + 30
+    while time.time() < fin and not (buscar(pg, "Lima", exacto=False) or buscar(pg, "Ubicacion seleccionada", exacto=False)):
+        pg.wait_for_timeout(400)
+    assert buscar(pg, "Lima", exacto=False) or buscar(pg, "Ubicacion seleccionada", exacto=False), "El punto marcado no muestra direccion ni coordenadas"
     clic(pg, "Enviar reporte")
     esperar_texto(pg, "Adjunta al menos una foto", 10)
     agregar_foto_demo(pg)
@@ -132,7 +137,7 @@ def test_e2e05_tecnico_resuelve(p):
     esperar_texto(pg, "Iniciar trabajo de campo", 20)
     clic(pg, "Iniciar trabajo de campo")
     esperar_texto(pg, "Finalizar reporte", 20)
-    escribir(pg, "Describe el trabajo realizado", "Se cambio la luminaria y se verifico el encendido.")
+    escribir(pg, "Describe el trabajo realizado", "Se cambió la luminaria y se verificó el encendido.")
     clic(pg, "Finalizar reporte")
     esperar_texto(pg, "Adjunta al menos una foto", 10)
     agregar_foto_demo(pg)
@@ -140,11 +145,13 @@ def test_e2e05_tecnico_resuelve(p):
     clic(pg, "Finalizar reporte")
     esperar_texto(pg, "Reporte finalizado", 30)
     esperar_texto(pg, "MIS ASIGNACIONES", 30)
-    for _ in range(6):
+    # La seccion RESUELTOS va despues de todas las asignaciones abiertas; con una base
+    # que ya paso por la suite de sistema puede haber decenas, asi que se recorre la lista.
+    for _ in range(40):
         n = buscar(pg, DATOS["titulo"], exacto=False)
         if n and "FINALIZADO" in (n["label"] or n["text"]).upper():
             break
-        desplazar(pg, 400)
+        desplazar(pg, 600)
     assert n and "FINALIZADO" in (n["label"] or n["text"]).upper()
     foto(pg, CAP / "13_tecnico_resuelto.png")
     nav.close()

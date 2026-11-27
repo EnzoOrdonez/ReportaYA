@@ -37,4 +37,22 @@ class RequestAuthTest {
         assertThatThrownBy(() -> RequestAuth.requireSelfOrRole(como(4, RequestAuth.TECNICO), 1L, RequestAuth.OPERADOR))
                 .isInstanceOf(ForbiddenException.class);
     }
+
+    @Test
+    @DisplayName("requireLecturaReporte: operador, duenio y tecnico asignado pasan; el resto recibe 403")
+    void requireLecturaReporte() {
+        Long dueno = 1L, tecnico = 4L;
+        assertThatCode(() -> RequestAuth.requireLecturaReporte(como(3, RequestAuth.OPERADOR), dueno, tecnico)).doesNotThrowAnyException();
+        assertThatCode(() -> RequestAuth.requireLecturaReporte(como(1, RequestAuth.CIUDADANO), dueno, tecnico)).doesNotThrowAnyException();
+        assertThatCode(() -> RequestAuth.requireLecturaReporte(como(4, RequestAuth.TECNICO), dueno, tecnico)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> RequestAuth.requireLecturaReporte(como(2, RequestAuth.CIUDADANO), dueno, tecnico))
+                .isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> RequestAuth.requireLecturaReporte(como(5, RequestAuth.TECNICO), dueno, tecnico))
+                .isInstanceOf(ForbiddenException.class);
+        // Un ciudadano con el mismo id que el tecnico asignado no hereda su permiso.
+        assertThatThrownBy(() -> RequestAuth.requireLecturaReporte(como(4, RequestAuth.CIUDADANO), dueno, tecnico))
+                .isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> RequestAuth.requireLecturaReporte(new MockHttpServletRequest(), dueno, null))
+                .isInstanceOf(ForbiddenException.class);
+    }
 }

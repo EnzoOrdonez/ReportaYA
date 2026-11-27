@@ -61,4 +61,16 @@ public final class RequestAuth {
         }
         throw new ForbiddenException("No tienes permiso para acceder a este recurso.");
     }
+
+    /**
+     * Lectura de un reporte y de lo que cuelga de el (detalle, fotos, historial):
+     * operador, ciudadano duenio o tecnico asignado. Cualquier otro recibe 403.
+     */
+    public static void requireLecturaReporte(HttpServletRequest req, Long duenoId, Long tecnicoAsignadoId) {
+        if (hasRole(req, OPERADOR)) return;
+        Long actor = cuentaId(req);
+        if (actor != null && actor.equals(duenoId)) return;
+        if (actor != null && hasRole(req, TECNICO) && actor.equals(tecnicoAsignadoId)) return;
+        throw new ForbiddenException("No tienes permiso para ver este reporte.");
+    }
 }

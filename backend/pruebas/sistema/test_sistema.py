@@ -276,6 +276,25 @@ def test_cp32_ficha_permisos(request, ciu, ciu2, op, tec2):
     assert res == [200, 403, 200, 403]
 
 
+@caso("CP-58", "TD", "RF-16 / RNF-03", "Fotos del reporte: duenio, otro ciudadano, operador, tecnico no asignado", "200, 403, 200, 403")
+def test_cp58_fotos_permisos(request, ciu, ciu2, op, tec2):
+    rid = crear_reporte(ciu["token"]).json()["id"]
+    requests.post(f"{API}/reportes/{rid}/fotos", json={"archivoBase64": img_b64(), "tipo": "INICIAL", "descripcion": "Foto"},
+                  headers=h(ciu["token"]), timeout=60)
+    res = [requests.get(f"{API}/reportes/{rid}/fotos", headers=h(t), timeout=30).status_code for t in (ciu["token"], ciu2["token"], op["token"], tec2["token"])]
+    request.node._obtenido = str(res)
+    assert res == [200, 403, 200, 403]
+
+
+@caso("CP-59", "TD", "RF-13 / RNF-03", "Historial de estados: duenio, otro ciudadano, operador, tecnico no asignado y reporte inexistente", "200, 403, 200, 403 y 404")
+def test_cp59_historial_permisos(request, ciu, ciu2, op, tec2):
+    rid = crear_reporte(ciu["token"]).json()["id"]
+    res = [requests.get(f"{API}/historial-estados/reporte/{rid}", headers=h(t), timeout=30).status_code for t in (ciu["token"], ciu2["token"], op["token"], tec2["token"])]
+    res.append(requests.get(f"{API}/historial-estados/reporte/999999999", headers=h(op["token"]), timeout=30).status_code)
+    request.node._obtenido = str(res)
+    assert res == [200, 403, 200, 403, 404]
+
+
 @caso("CP-33", "PE", "RF-15 / HU-08", "Mapa filtrado por estado y por tipo", "200 y todos los puntos cumplen el filtro")
 def test_cp33_mapa_filtros(request, ciu):
     crear_reporte(ciu["token"], tipoProblema="RESIDUOS")
@@ -433,13 +452,15 @@ def test_cp48_foto_corrupta(request, ciu, op, tec):
     assert r.status_code == 400 and d["estado"] == "REVISION" and not finales
 
 
-@caso("CP-49", "TD", "RF-11 / RNF-03", "Otro tecnico intenta cerrar el reporte (con su id y con el id del asignado)", "403 en ambos")
+@caso("CP-49", "TD", "RF-11 / RNF-03", "Otro tecnico intenta cerrar el reporte (con su id y con el id del asignado)", "400 (no asignado) y 403 (id ajeno); el reporte sigue en REVISION")
 def test_cp49_cierre_ajeno(request, ciu, op, tec, tec2):
     rid = reporte_asignado(ciu, op, tec)
     a = completar(tec2["cuentaId"], rid, tec2["token"]).status_code
     b = completar(tec["cuentaId"], rid, tec2["token"]).status_code
-    request.node._obtenido = f"{a}, {b}"
-    assert a in (400, 403) and b == 403
+    d = requests.get(f"{API}/reportes/{rid}", headers=h(ciu["token"]), timeout=30).json()
+    finales = sum(f["tipo"] == "FINAL" for f in (d.get("fotos") or []))
+    request.node._obtenido = f"{a}, {b}; estado {d['estado']}, fotos FINAL {finales}"
+    assert (a, b) == (400, 403) and d["estado"] == "REVISION" and finales == 0
 
 
 @caso("CP-50", "TE", "RF-11 / RF-13 / HU-07", "Flujo completo PENDIENTE -> REVISION -> FINALIZADO visto por el ciudadano", "200; FINALIZADO con comentario, foto FINAL e historial de 3 estados")

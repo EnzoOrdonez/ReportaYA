@@ -56,9 +56,9 @@ Cuentas de prueba de `db/llenar-TABLAS.sql`: `ciudadano`, `op.maria` (operador) 
 
 | Nivel | Herramienta | Resultado (v1.1.2) |
 |---|---|---|
-| Unitarias e integración del backend | JUnit 5, Mockito, MockMvc, H2 | 37 de 37 |
+| Unitarias e integración del backend | JUnit 5, Mockito, MockMvc, H2 | 38 de 38 |
 | Unitarias y de widgets de la app (incluye accesibilidad) | flutter_test | 31 de 31 |
-| Sistema, caja negra sobre la API | pytest + requests | 57 de 57 |
+| Sistema, caja negra sobre la API | pytest + requests | 59 de 59 |
 | Extremo a extremo sobre la web | Playwright | 8 de 8 |
 | Carga (50 usuarios, 60 s) | httpx asíncrono | p95 de 694 ms, 0 errores |
 | Humo en producción (solo lectura) | pytest | 10 de 10 |

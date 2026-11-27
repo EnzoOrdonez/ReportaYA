@@ -334,7 +334,7 @@ La carpeta `api-tests/` contiene archivos `.rest` para probar todos los endpoint
 |---|---|---|
 | Unitarias (JUnit 5 + Mockito) | `src/test/java/.../service`, `.../util` | `mvn test` |
 | Integracion (Spring Boot + MockMvc + H2 modo PostgreSQL) | `src/test/java/.../integracion` | `mvn test` |
-| Sistema, caja negra (pytest, 57 casos con particion de equivalencias, valores limite, tabla de decision y transicion de estados) | `pruebas/sistema` | `REPORTAYA_URL=http://127.0.0.1:8081 pytest pruebas/sistema` (backend local con `db/llenar-TABLAS.sql`) |
+| Sistema, caja negra (pytest, 59 casos con particion de equivalencias, valores limite, tabla de decision y transicion de estados) | `pruebas/sistema` | `REPORTAYA_URL=http://127.0.0.1:8081 pytest pruebas/sistema` (backend local con `db/llenar-TABLAS.sql`) |
 | Carga (RNF-06: 50 usuarios, p95 <= 3 s) | `pruebas/carga` | `python pruebas/carga/prueba_carga.py --usuarios 50 --segundos 60` |
 | Humo del despliegue (solo lectura) | `pruebas/humo` | `REPORTAYA_VERSION=1.1.2 pytest pruebas/humo` |
 

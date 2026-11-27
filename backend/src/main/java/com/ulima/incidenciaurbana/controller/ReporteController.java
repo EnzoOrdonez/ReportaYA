@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -186,21 +185,24 @@ public class ReporteController {
     @GetMapping("/{id}/fotos")
     public ResponseEntity<?> obtenerFotos(
             @PathVariable Long id,
-            @RequestParam(name = "tipo", required = false) String tipo) {
+            @RequestParam(name = "tipo", required = false) String tipo,
+            HttpServletRequest request) {
+        ReporteDTO reporte;
         try {
-            ReporteDTO reporte = queryService.obtenerReportePorId(id);
-            if (reporte.getFotos() == null) {
-                return ResponseEntity.ok(List.of());
-            }
-            if (tipo != null && !tipo.trim().isEmpty()) {
-                return ResponseEntity.ok(reporte.getFotos().stream()
-                        .filter(f -> f.getTipo().name().equalsIgnoreCase(tipo.trim()))
-                        .collect(Collectors.toList()));
-            }
-            return ResponseEntity.ok(reporte.getFotos());
+            reporte = queryService.obtenerReportePorId(id);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ApiErrores.mensaje(e)));
         }
+        verificarLecturaDetalle(reporte, request);
+        if (reporte.getFotos() == null) {
+            return ResponseEntity.ok(List.of());
+        }
+        if (tipo != null && !tipo.trim().isEmpty()) {
+            return ResponseEntity.ok(reporte.getFotos().stream()
+                    .filter(f -> f.getTipo().name().equalsIgnoreCase(tipo.trim()))
+                    .collect(Collectors.toList()));
+        }
+        return ResponseEntity.ok(reporte.getFotos());
     }
 
     @DeleteMapping("/{id}")
@@ -216,12 +218,6 @@ public class ReporteController {
 
     /** Dueño, tecnico asignado u operador. */
     private void verificarLecturaDetalle(ReporteDTO reporte, HttpServletRequest request) {
-        if (RequestAuth.hasRole(request, RequestAuth.OPERADOR)) return;
-        Long actor = RequestAuth.cuentaId(request);
-        if (actor == null) throw new ForbiddenException("No tienes permiso para ver este reporte.");
-        if (Objects.equals(actor, reporte.getCuentaId())) return;
-        if (RequestAuth.hasRole(request, RequestAuth.TECNICO)
-                && Objects.equals(actor, reporte.getTecnicoAsignadoId())) return;
-        throw new ForbiddenException("No tienes permiso para ver este reporte.");
+        RequestAuth.requireLecturaReporte(request, reporte.getCuentaId(), reporte.getTecnicoAsignadoId());
     }
 }

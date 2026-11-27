@@ -1,0 +1,45 @@
+   Woah! You appear to be trying to run flutter as root.
+   We strongly recommend running the flutter tool without superuser privileges.
+  /
+📎
+00:00 +0: loading app/test/api_config_test.dart
+00:00 +0: app/test/api_config_test.dart: ApiConfig.normalizar agrega esquema y sufijo /api
+00:00 +1: app/test/api_config_test.dart: ApiConfig.normalizar respeta https y quita barras finales
+00:00 +2: app/test/api_config_test.dart: ApiConfig.normalizar no duplica /api
+00:00 +3: app/test/api_config_test.dart: ApiConfig.resolverUrlFoto URL absoluta queda igual
+00:00 +4: app/test/api_config_test.dart: ApiConfig.resolverUrlFoto asset de demo queda igual
+00:00 +5: app/test/api_config_test.dart: ApiConfig.resolverUrlFoto ruta del backend se resuelve contra el servidor actual
+00:00 +6: loading app/test/unit/api_client_test.dart
+00:00 +6: app/test/unit/api_client_test.dart: devuelve el JSON de una respuesta 2xx
+00:00 +7: app/test/unit/api_client_test.dart: usa el mensaje {"error": ...} del backend
+00:00 +8: app/test/unit/api_client_test.dart: traduce 403 sin cuerpo a un mensaje legible
+00:00 +9: app/test/unit/api_client_test.dart: una pagina HTML de error (502) no rompe la app
+00:00 +10: app/test/unit/api_client_test.dart: sin red devuelve un mensaje de conexion
+00:00 +11: app/test/unit/api_client_test.dart: getTodasLasPaginas recorre las paginas hasta last=true
+00:00 +12: app/test/unit/api_client_test.dart: getTodasLasPaginas entiende el formato {"page":{"totalPages":N}}
+00:00 +13: loading app/test/unit/modelos_test.dart
+00:01 +13: app/test/unit/modelos_test.dart: (setUpAll)
+00:01 +13: app/test/unit/modelos_test.dart: ReporteResponse lee la respuesta real del backend
+00:01 +14: app/test/unit/modelos_test.dart: HistorialEstado lee el historial real (el primer cambio no tiene estado anterior)
+00:01 +15: app/test/unit/modelos_test.dart: campos opcionales ausentes toman valores por defecto sin lanzar excepciones
+00:01 +16: app/test/unit/modelos_test.dart: etiquetas de los cinco tipos de problema
+00:01 +17: app/test/unit/modelos_test.dart: formato de fechas en espanol y tolerancia a texto invalido
+00:01 +18: app/test/unit/modelos_test.dart: (tearDownAll)
+00:01 +18: loading app/test/despertador_test.dart
+00:01 +18: app/test/despertador_test.dart: marca despierto cuando /salud responde 200
+00:01 +19: app/test/despertador_test.dart: backend sin /salud (404) no se marca despierto ni deja el aviso
+00:01 +20: app/test/despertador_test.dart: sin red no lanza excepcion
+00:01 +21: loading app/test/widget/accesibilidad_test.dart
+00:02 +21: app/test/widget/accesibilidad_test.dart: (setUpAll)
+00:02 +21: app/test/widget/accesibilidad_test.dart: Login: los campos vacios muestran el mensaje de obligatorio
+00:03 +22: app/test/widget/accesibilidad_test.dart: Registro: DNI, telefono, correo y contrasena invalidos muestran su mensaje
+00:04 +23: app/test/widget/accesibilidad_test.dart: Login en 360 x 640 con texto al 100 % sin desbordes
+00:04 +24: app/test/widget/accesibilidad_test.dart: Registro en 360 x 640 con texto al 100 % sin desbordes
+00:04 +25: app/test/widget/accesibilidad_test.dart: Login en 360 x 640 con texto al 200 % sin desbordes
+00:04 +26: app/test/widget/accesibilidad_test.dart: Registro en 360 x 640 con texto al 200 % sin desbordes
+00:04 +27: app/test/widget/accesibilidad_test.dart: Login: los botones tienen etiqueta y area tactil de 48 dp (pautas de Android)
+00:04 +28: app/test/widget/accesibilidad_test.dart: Login: contraste del texto (WCAG 2.1, 4.5:1)
+00:04 +29: app/test/widget/accesibilidad_test.dart: Registro: pautas de etiqueta, area tactil y contraste
+00:04 +30: app/test/widget/accesibilidad_test.dart: Selector de fotos: boton accesible "Agregar foto" y tope de 3 fotos
+00:04 +31: app/test/widget/accesibilidad_test.dart: (tearDownAll)
+00:04 +31: All tests passed!
