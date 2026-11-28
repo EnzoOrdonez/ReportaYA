@@ -1,6 +1,7 @@
 package com.ulima.incidenciaurbana.config;
 
 import com.ulima.incidenciaurbana.util.JwtUtil;
+import com.ulima.incidenciaurbana.util.RegistroSesiones;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,9 +12,11 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class JwtInterceptor implements HandlerInterceptor {
 
     private final JwtUtil jwtUtil;
+    private final RegistroSesiones sesiones;
 
-    public JwtInterceptor(JwtUtil jwtUtil) {
+    public JwtInterceptor(JwtUtil jwtUtil, RegistroSesiones sesiones) {
         this.jwtUtil = jwtUtil;
+        this.sesiones = sesiones;
     }
 
     @Override
@@ -26,7 +29,7 @@ public class JwtInterceptor implements HandlerInterceptor {
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
+            response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"error\":\"Token no proporcionado\"}");
             return false;
         }
@@ -35,14 +38,21 @@ public class JwtInterceptor implements HandlerInterceptor {
 
         try {
             Claims claims = jwtUtil.parseClaims(token);
-            request.setAttribute("cuentaId", Long.valueOf(claims.getSubject()));
+            Long cuentaId = Long.valueOf(claims.getSubject());
+            if (!sesiones.vigente(cuentaId, claims.get("emitidoMs", Long.class), claims.getIssuedAt())) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"error\":\"Tu sesión se cerró. Inicia sesión nuevamente.\"}");
+                return false;
+            }
+            request.setAttribute("cuentaId", cuentaId);
             request.setAttribute("usuario", claims.get("usuario", String.class));
             request.setAttribute("tipoCuenta", claims.get("tipoCuenta", String.class));
             return true;
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Token invalido o expirado\"}");
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"error\":\"Token inválido o expirado\"}");
             return false;
         }
     }

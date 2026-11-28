@@ -32,7 +32,9 @@ class AuthServiceImplTest {
 
     @BeforeEach
     void preparar() {
-        servicio = new AuthServiceImpl(cuentas, bcrypt, new JwtUtil("clave-de-pruebas-unitarias-con-mas-de-32-bytes", 60_000), correo);
+        servicio = new AuthServiceImpl(cuentas, bcrypt, new JwtUtil("clave-de-pruebas-unitarias-con-mas-de-32-bytes", 60_000), correo,
+                new com.ulima.incidenciaurbana.util.LimitadorIntentosLogin(),
+                mock(com.ulima.incidenciaurbana.util.RegistroSesiones.class));
         ana = new Ciudadano("ana", bcrypt.encode("Clave123"), new Persona("Ana", "Quispe", "45781230", "9", "ana@mail.com"));
         ana.setId(1L);
         ana.setActivo(true);
@@ -84,17 +86,37 @@ class AuthServiceImplTest {
     }
 
     @Test
-    @DisplayName("Restablecer: codigo vencido o clave corta se rechazan; el codigo valido cambia la clave y se invalida")
+    @DisplayName("Restablecer: codigo ligado al correo; vencido, ajeno o clave corta se rechazan; el valido cambia la clave y se invalida")
     void restablecer() {
         ana.asignarTokenRecuperacion("ABC234", LocalDateTime.now().plusMinutes(10));
         when(cuentas.findByTokenRecuperacion("ABC234")).thenReturn(Optional.of(ana));
-        assertThatThrownBy(() -> servicio.restablecerContrasena("ABC234", "12345")).hasMessageContaining("6");
-        servicio.restablecerContrasena("ABC234", "Nueva456");
-        assertThat(bcrypt.matches("Nueva456", ana.getContrasenaHash())).isTrue();
+        assertThatThrownBy(() -> servicio.restablecerContrasena("ana@mail.com", "ABC234", "1234567")).hasMessageContaining("8");
+        assertThatThrownBy(() -> servicio.restablecerContrasena(null, "ABC234", "Nueva4567")).hasMessageContaining("correo");
+        // El codigo de Ana no sirve con otro correo.
+        assertThatThrownBy(() -> servicio.restablecerContrasena("otro@mail.com", "ABC234", "Nueva4567")).hasMessageContaining("inválido");
+        assertThat(ana.getTokenRecuperacion()).isEqualTo("ABC234");
+        // Se acepta en minusculas y con espacios alrededor.
+        servicio.restablecerContrasena(" ANA@mail.com ", "abc234", "Nueva4567");
+        assertThat(bcrypt.matches("Nueva4567", ana.getContrasenaHash())).isTrue();
         assertThat(ana.getTokenRecuperacion()).isNull();
 
         ana.asignarTokenRecuperacion("XYZ789", LocalDateTime.now().minusMinutes(1));
         when(cuentas.findByTokenRecuperacion("XYZ789")).thenReturn(Optional.of(ana));
-        assertThatThrownBy(() -> servicio.restablecerContrasena("XYZ789", "Nueva456")).hasMessageContaining("expirado");
+        assertThatThrownBy(() -> servicio.restablecerContrasena("ana@mail.com", "XYZ789", "Nueva4567")).hasMessageContaining("expirado");
+    }
+
+    @Test
+    @DisplayName("Restablecer: tras 5 codigos errados el correo queda bloqueado (429) aunque luego use el codigo correcto")
+    void restablecerFuerzaBruta() {
+        ana.asignarTokenRecuperacion("ABC234", LocalDateTime.now().plusMinutes(10));
+        when(cuentas.findByTokenRecuperacion("ABC234")).thenReturn(Optional.of(ana));
+        when(cuentas.findByTokenRecuperacion("ZZZ999")).thenReturn(Optional.empty());
+        for (int i = 0; i < 5; i++) {
+            assertThatThrownBy(() -> servicio.restablecerContrasena("ana@mail.com", "ZZZ999", "Nueva4567"))
+                    .hasMessageContaining("inválido");
+        }
+        assertThatThrownBy(() -> servicio.restablecerContrasena("ana@mail.com", "ABC234", "Nueva4567"))
+                .isInstanceOf(com.ulima.incidenciaurbana.exception.TooManyAttemptsException.class);
+        assertThat(ana.getTokenRecuperacion()).isEqualTo("ABC234");
     }
 }

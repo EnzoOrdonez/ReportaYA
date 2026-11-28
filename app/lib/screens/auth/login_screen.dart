@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../configs/api_config.dart';
+import '../../configs/version_app.dart';
 import '../../controllers/auth_controller.dart';
 import '../../models/enums.dart';
 import '../../routes/app_routes.dart';
@@ -22,6 +24,12 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usuarioCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _loading = false;
+  bool _verClave = false;
+
+  /// El selector de servidor es una herramienta de desarrollo: en la versión
+  /// publicada solo aparece si ya se eligió otro servidor o tras mantener
+  /// presionado el título "ReportaYA".
+  bool _mostrarServidor = kDebugMode || ApiConfig.usaUrlPersonalizada;
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
@@ -67,14 +75,17 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           children: [
             const SizedBox(height: 30),
-            Semantics(
-              header: true,
-              child: const Text(
-                'ReportaYA',
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+            GestureDetector(
+              onLongPress: () => setState(() => _mostrarServidor = true),
+              child: Semantics(
+                header: true,
+                child: const Text(
+                  'ReportaYA',
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -136,13 +147,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
                     const _Label('Usuario:'),
-                    _input(_usuarioCtrl, 'Ingresa tu usuario'),
+                    _input(
+                      _usuarioCtrl,
+                      'Ingresa tu usuario',
+                      autofill: AutofillHints.username,
+                    ),
                     const SizedBox(height: 12),
                     const _Label('Contraseña:'),
                     _input(
                       _passwordCtrl,
                       'Ingresa tu contraseña',
-                      obscure: true,
+                      obscure: !_verClave,
+                      autofill: AutofillHints.password,
+                      suffix: IconButton(
+                        tooltip: _verClave
+                            ? 'Ocultar contraseña'
+                            : 'Mostrar contraseña',
+                        icon: Icon(
+                          _verClave ? Icons.visibility_off : Icons.visibility,
+                        ),
+                        onPressed: () => setState(() => _verClave = !_verClave),
+                      ),
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
@@ -213,33 +238,52 @@ class _LoginScreenState extends State<LoginScreen> {
                       );
                     }),
                     // Permite elegir PC local o nube sin recompilar el APK.
-                    TextButton.icon(
-                      onPressed: _loading
-                          ? null
-                          : () async {
-                              if (await mostrarDialogoServidor()) {
-                                setState(() {});
-                                Get.find<Despertador>().despertar();
-                              }
-                            },
-                      icon: const Icon(
-                        Icons.dns_outlined,
-                        size: 16,
-                        color: AppColors.primary,
-                      ),
-                      label: Text(
-                        'Servidor: ${ApiConfig.descripcionCorta}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppColors.textoSecundario,
-                          fontSize: 12.5,
+                    if (_mostrarServidor)
+                      TextButton.icon(
+                        onPressed: _loading
+                            ? null
+                            : () async {
+                                if (await mostrarDialogoServidor()) {
+                                  setState(() {});
+                                  Get.find<Despertador>().despertar();
+                                }
+                              },
+                        icon: const Icon(
+                          Icons.dns_outlined,
+                          size: 16,
+                          color: AppColors.primary,
+                        ),
+                        label: Text(
+                          'Servidor: ${ApiConfig.descripcionCorta}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.textoSecundario,
+                            fontSize: 12.5,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Get.toNamed(AppRoutes.privacidad),
+              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+              child: const Text(
+                'Aviso de privacidad',
+                style: TextStyle(
+                  color: AppColors.enlace,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+            const Text(
+              'ReportaYA $kVersionApp · Proyecto académico, Universidad de Lima',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: AppColors.textoSecundario),
+            ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -250,16 +294,20 @@ class _LoginScreenState extends State<LoginScreen> {
     TextEditingController ctrl,
     String hint, {
     bool obscure = false,
+    String? autofill,
+    Widget? suffix,
   }) {
     return TextFormField(
       controller: ctrl,
       obscureText: obscure,
       autocorrect: false,
+      autofillHints: autofill == null ? null : [autofill],
       validator: (value) => (value == null || value.trim().isEmpty)
           ? 'Este campo es obligatorio'
           : null,
       decoration: InputDecoration(
         hintText: hint,
+        suffixIcon: suffix,
         filled: true,
         fillColor: const Color(0xFFF5F5F5),
         border: OutlineInputBorder(

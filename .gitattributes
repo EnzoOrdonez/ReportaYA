@@ -1,0 +1,12 @@
+# Estadisticas de lenguajes en GitHub: la documentacion y el codigo generado
+# por Flutter para cada plataforma no cuentan como codigo del proyecto.
+docs/** linguist-documentation
+app/docs/** linguist-documentation
+backend/docs/** linguist-documentation
+app/android/** linguist-vendored
+app/ios/** linguist-vendored
+app/linux/** linguist-vendored
+app/macos/** linguist-vendored
+app/windows/** linguist-vendored
+app/web/** linguist-vendored
+*.sh text eol=lf

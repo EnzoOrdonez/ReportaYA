@@ -73,7 +73,7 @@ public class TecnicoServiceImpl implements ITecnicoService {
                         tecnico.getPersona().getDni(),
                         tecnico.getPersona().getTelefono(),
                         tecnico.isActivo()))
-                .orElseThrow(() -> new IllegalArgumentException("Tecnico no encontrado con id: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Técnico no encontrado con id: " + id));
     }
 
     @Override
@@ -88,7 +88,7 @@ public class TecnicoServiceImpl implements ITecnicoService {
             try {
                 estadoEnum = EstadoReporte.valueOf(estado.trim().toUpperCase());
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Estado invalido: " + estado);
+                throw new IllegalArgumentException("Estado inválido: " + estado);
             }
             reportes = reporteRepository.findByTecnicoIdAndEstado(tecnicoId, estadoEnum, pageable);
         }
@@ -111,7 +111,7 @@ public class TecnicoServiceImpl implements ITecnicoService {
         }
 
         if (reporte.getTecnico() == null || !Objects.equals(reporte.getTecnico().getId(), tecnicoId)) {
-            throw new IllegalArgumentException("Solo el tecnico asignado puede completar el reporte");
+            throw new IllegalArgumentException("Solo el técnico asignado puede completar el reporte");
         }
 
         for (CompletarReporteRequest.FotoRequestInline fotoRequest : request.getFotos()) {

@@ -11,6 +11,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:image_picker/image_picker.dart';
 
+import '../utils/validacion_foto.dart';
+
+/// Las fotos de demostración solo se ofrecen en compilaciones de prueba
+/// (`--dart-define=FOTOS_DEMO=true`); la app publicada exige una foto real.
+const bool kFotosDemo = bool.fromEnvironment('FOTOS_DEMO');
+
 /// Una foto elegida localmente, aun no subida. Guarda los bytes para la
 /// vista previa y el envio; [assetPath] solo se conserva para las de demo.
 class FotoLocal {
@@ -67,6 +73,14 @@ class _FotoPickerFieldState extends State<FotoPickerField> {
       );
       if (picked == null) return;
       final bytes = await picked.readAsBytes();
+      final motivo = validarFoto(bytes);
+      if (motivo != null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(motivo)));
+        return;
+      }
       setState(() => _fotos.add(FotoLocal(bytes)));
       _emitChange();
     } catch (e) {
@@ -113,7 +127,7 @@ class _FotoPickerFieldState extends State<FotoPickerField> {
                 _agregarDesde(ImageSource.gallery);
               },
             ),
-            if (widget.demoAssets.isNotEmpty)
+            if (kFotosDemo && widget.demoAssets.isNotEmpty)
               ListTile(
                 leading: Icon(Icons.collections_outlined, color: widget.accent),
                 title: const Text('Usar foto de demo'),

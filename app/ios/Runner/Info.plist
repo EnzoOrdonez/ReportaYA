@@ -78,5 +78,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ReportaYA usa tu ubicación solo al crear un reporte, para marcar el punto del problema en el mapa.</string>
 </dict>
 </plist>

@@ -1,6 +1,3 @@
-# Referencia: Blueprint usado para el despliegue en Render (repo EnzoOrdonez/reportaya-api).
-# En este monorepo el backend vive en backend/: para reutilizarlo, mover este archivo a la raiz
-# del repositorio y agregar "rootDir: backend" al servicio web.
 # Blueprint de Render: backend (Docker, plan gratis) + PostgreSQL gratis.
 # Render > New > Blueprint > este repo. Lo crea todo y genera JWT_SECRET solo.
 # Ojo: la Postgres gratis de Render vence 30 dias despues de creada

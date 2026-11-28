@@ -12,6 +12,9 @@ import jakarta.validation.constraints.Size;
  * Incluye validaciones para los campos requeridos
  */
 public class CuentaDTO {
+
+    /** Letra inicial y luego letras (con tildes), espacios, guiones o apóstrofes. */
+    public static final String NOMBRE_VALIDO = "^\\p{L}[\\p{L}\\p{M} '’-]*$";
     
     @NotBlank(message = "El tipo de cuenta es obligatorio")
     private String tipoCuenta; // CIUDADANO, TECNICO, OPERADOR_MUNICIPAL
@@ -21,13 +24,18 @@ public class CuentaDTO {
     private String usuario;
     
     @NotBlank(message = "La contraseña es obligatoria")
-    @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
+    @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
     private String contrasena;
     
+    // HU-01: de 2 a 100 caracteres; se admiten tildes, espacios, guiones y apóstrofes.
     @NotBlank(message = "Los nombres son obligatorios")
+    @Size(min = 2, max = 100, message = "Los nombres deben tener entre 2 y 100 caracteres")
+    @Pattern(regexp = NOMBRE_VALIDO, message = "Los nombres solo admiten letras, espacios, guiones y apóstrofes")
     private String nombres;
     
     @NotBlank(message = "Los apellidos son obligatorios")
+    @Size(min = 2, max = 100, message = "Los apellidos deben tener entre 2 y 100 caracteres")
+    @Pattern(regexp = NOMBRE_VALIDO, message = "Los apellidos solo admiten letras, espacios, guiones y apóstrofes")
     private String apellidos;
     
     @NotBlank(message = "El DNI es obligatorio")
@@ -46,6 +54,9 @@ public class CuentaDTO {
     @NotNull(message = "El estado activo es obligatorio")
     private Boolean activo;
     
+    /** RF-21: el registro público exige aceptar el aviso de privacidad. */
+    private Boolean aceptaPrivacidad;
+
     private Long id; // Para respuestas
     
     // Constructors
@@ -131,6 +142,14 @@ public class CuentaDTO {
         this.correo = correo;
     }
     
+    public Boolean getAceptaPrivacidad() {
+        return aceptaPrivacidad;
+    }
+
+    public void setAceptaPrivacidad(Boolean aceptaPrivacidad) {
+        this.aceptaPrivacidad = aceptaPrivacidad;
+    }
+
     public Boolean getActivo() {
         return activo;
     }

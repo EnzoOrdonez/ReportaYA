@@ -39,7 +39,7 @@ public class AsignacionServiceImpl implements IAsignacionService {
 
         Tecnico tecnico = tecnicoRepository.findById(asignacionDTO.getTecnicoId())
                 .orElseThrow(() -> new RuntimeException(
-                        "Tecnico no encontrado con id: " + asignacionDTO.getTecnicoId()));
+                        "Técnico no encontrado con id: " + asignacionDTO.getTecnicoId()));
 
         ReporteDTO reporte = reporteService.asignarTecnico(asignacionDTO.getReporteId(), asignacionDTO.getTecnicoId());
 

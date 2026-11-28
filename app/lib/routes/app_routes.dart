@@ -7,6 +7,7 @@ import '../screens/operador/home_screen_operador.dart';
 import '../screens/tecnico/home_screen_tecnico.dart';
 import '../screens/auth/recover_password_screen.dart';
 import '../screens/auth/reset_password_screen.dart';
+import '../screens/legal/aviso_privacidad_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -17,6 +18,7 @@ class AppRoutes {
   static const String homeTecnico = '/tecnico';
   static const String recoverPassword = '/recover-password';
   static const String resetPassword = '/reset-password';
+  static const String privacidad = '/privacidad';
 
   static List<GetPage> get pages => [
     GetPage(name: splash, page: () => const SplashScreen()),
@@ -27,5 +29,6 @@ class AppRoutes {
     GetPage(name: homeTecnico, page: () => const HomeScreenTecnico()),
     GetPage(name: recoverPassword, page: () => const RecoverPasswordScreen()),
     GetPage(name: resetPassword, page: () => const ResetPasswordScreen()),
+    GetPage(name: privacidad, page: () => const AvisoPrivacidadScreen()),
   ];
 }

@@ -7,6 +7,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/auth_controller.dart';
@@ -31,6 +32,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   late final String _correo;
 
+  /// true si el código llegó en el enlace del correo (HU-05).
+  bool _codigoDesdeEnlace = false;
+  bool _avanzando = false;
+
   /// Sub-paso visible: 0 = codigo, 1 = nueva contrasena.
   int _step = 0;
 
@@ -46,7 +51,61 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   void initState() {
     super.initState();
-    _correo = (Get.arguments is String) ? Get.arguments as String : '';
+    // Llega desde "Olvidé mi contraseña" (argumento String) o desde el enlace
+    // del correo: #/reset-password?correo=...&codigo=... (parámetros de ruta).
+    final args = Get.arguments;
+    final params = Get.parameters;
+    String correo = '';
+    String? codigo;
+    if (args is String) {
+      correo = args;
+    } else if (args is Map) {
+      correo = '${args['correo'] ?? ''}';
+      codigo = args['codigo']?.toString();
+    }
+    if (correo.isEmpty) correo = params['correo'] ?? '';
+    codigo ??= params['codigo'];
+    _correo = correo.trim();
+    final limpio = extraerCodigoRecuperacion(codigo ?? '');
+    if (limpio != null) {
+      _codigoCtrl.text = limpio;
+      _codigoDesdeEnlace = true;
+      _step = 1;
+    }
+  }
+
+  Future<void> _pegarCodigo() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final codigo = extraerCodigoRecuperacion(data?.text ?? '');
+    if (!mounted) return;
+    if (codigo == null) {
+      setState(
+        () => _error =
+            'No hay un código de $kResetCodeLength caracteres copiado. '
+            'Cópialo del correo o escríbelo.',
+      );
+      return;
+    }
+    _codigoCtrl.text = codigo;
+    _continuarAPassword();
+  }
+
+  /// Al completar los 6 caracteres se pasa solo a la nueva contraseña.
+  void _alCompletarCodigo(String _) {
+    if (_step != 0 || _avanzando) return;
+    _avanzando = true;
+    Future.delayed(const Duration(milliseconds: 250), () {
+      _avanzando = false;
+      if (mounted && _step == 0) _continuarAPassword();
+    });
+  }
+
+  void _salir() {
+    if (Navigator.of(context).canPop()) {
+      Get.back();
+    } else {
+      Get.offAllNamed(AppRoutes.login);
+    }
   }
 
   @override
@@ -91,12 +150,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     if (nuevaPass.length < kMinPasswordLength) {
       setState(
         () => _error =
-            'La contrasena debe tener al menos $kMinPasswordLength caracteres.',
+            'La contraseña debe tener al menos $kMinPasswordLength caracteres.',
       );
       return;
     }
     if (nuevaPass != confirmacion) {
-      setState(() => _error = 'Las contrasenas no coinciden.');
+      setState(() => _error = 'Las contraseñas no coinciden.');
       return;
     }
 
@@ -106,8 +165,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     });
 
     try {
-      await _auth.restablecerContrasena(codigo, nuevaPass, confirmacion);
-      AppToast.success('Contrasena restablecida con exito');
+      await _auth.restablecerContrasena(
+        _correo,
+        codigo,
+        nuevaPass,
+        confirmacion,
+      );
+      AppToast.success('Contraseña restablecida con éxito');
       await Future.delayed(const Duration(milliseconds: 600));
       Get.offAllNamed(AppRoutes.login);
     } catch (e) {
@@ -116,7 +180,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         _error = msg;
         // Si el backend rechaza el codigo, regresar al sub-paso del codigo
         // para corregirlo o reenviarlo, con el error visible ahi.
-        if (_esErrorDeCodigo(msg)) _step = 0;
+        if (_esErrorDeCodigo(msg)) {
+          _step = 0;
+          _codigoDesdeEnlace = false;
+        }
       });
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -124,7 +191,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   bool _esErrorDeCodigo(String msg) {
-    final m = msg.toLowerCase();
+    // El backend responde con tildes ("Código ... inválido"); se normalizan
+    // para que la comparación funcione con y sin ellas.
+    final m = msg
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u');
     return m.contains('codigo') ||
         m.contains('token') ||
         m.contains('expir') ||
@@ -183,6 +258,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     if (_correo.isEmpty) {
       return PasswordResetScaffold(
         palette: palette,
+        onBack: _salir,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -206,6 +282,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     return PasswordResetScaffold(
       palette: palette,
+      onBack: _salir,
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
         transitionBuilder: (child, animation) => FadeTransition(
@@ -249,7 +326,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         PasswordResetCodeField(
           controller: _codigoCtrl,
           palette: palette,
-          onCompleted: (_) => setState(() {}),
+          autofocus: true,
+          onCompleted: _alCompletarCodigo,
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: _pegarCodigo,
+            icon: const Icon(Icons.content_paste, size: 18),
+            label: const Text('Pegar código'),
+            style: TextButton.styleFrom(
+              foregroundColor: palette.focusedFieldLine,
+              minimumSize: const Size(48, 48),
+            ),
+          ),
         ),
         PasswordResetErrorMessage(palette: palette, message: _error),
         const SizedBox(height: 28),
@@ -307,7 +397,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             Expanded(
               child: PasswordResetTitle(
                 palette: palette,
-                text: 'Crea tu nueva contrasena',
+                text: 'Crea tu nueva contraseña',
               ),
             ),
             // Equilibra el ancho del IconButton para centrar el titulo.
@@ -317,15 +407,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         const SizedBox(height: 10),
         PasswordResetSubtitle(
           palette: palette,
-          text: 'Usa al menos $kMinPasswordLength caracteres.',
+          text: _codigoDesdeEnlace
+              ? 'Código ${_codigoCtrl.text} tomado del enlace de tu correo. '
+                    'Usa al menos $kMinPasswordLength caracteres.'
+              : 'Usa al menos $kMinPasswordLength caracteres.',
         ),
         const SizedBox(height: 26),
-        PasswordResetFieldLabel(palette: palette, text: 'Nueva contrasena'),
+        PasswordResetFieldLabel(palette: palette, text: 'Nueva contraseña'),
         const SizedBox(height: 8),
         PasswordResetField(
           controller: _passCtrl,
           palette: palette,
-          hint: 'Minimo $kMinPasswordLength caracteres',
+          hint: 'Mínimo $kMinPasswordLength caracteres',
           obscureText: !_passwordVisible,
           textInputAction: TextInputAction.next,
           suffixIcon: PasswordVisibilityToggle(
@@ -336,12 +429,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           ),
         ),
         const SizedBox(height: 18),
-        PasswordResetFieldLabel(palette: palette, text: 'Confirmar contrasena'),
+        PasswordResetFieldLabel(palette: palette, text: 'Confirmar contraseña'),
         const SizedBox(height: 8),
         PasswordResetField(
           controller: _confirmPassCtrl,
           palette: palette,
-          hint: 'Repite la nueva contrasena',
+          hint: 'Repite la nueva contraseña',
           obscureText: !_confirmVisible,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _restablecer(),

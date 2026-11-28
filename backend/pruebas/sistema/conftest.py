@@ -81,7 +81,8 @@ def h(tok):
 def cuerpo_registro(**kw):
     s = sufijo()
     base = dict(usuario=f"u{s}", contrasena="Clave123", nombres="Prueba", apellidos="Sistema",
-                dni=dni_unico(), telefono="987654321", correo=f"u{s}@prueba.pe", tipoCuenta="CIUDADANO")
+                dni=dni_unico(), telefono="987654321", correo=f"u{s}@prueba.pe", tipoCuenta="CIUDADANO",
+                aceptaPrivacidad=True)
     base.update(kw)
     return base
 

@@ -65,12 +65,20 @@ class MapPickerView extends StatefulWidget {
   final void Function(double lat, double lng) onLocationPicked;
   final double height;
 
+  /// Si se indica, muestra el botón "Mi ubicación" sobre el mapa (RF-04).
+  final VoidCallback? onUsarMiUbicacion;
+
+  /// true mientras se consulta el GPS: el botón muestra un indicador.
+  final bool buscandoUbicacion;
+
   const MapPickerView({
     super.key,
     this.initialLat,
     this.initialLng,
     required this.onLocationPicked,
     this.height = 200,
+    this.onUsarMiUbicacion,
+    this.buscandoUbicacion = false,
   });
 
   @override
@@ -79,6 +87,7 @@ class MapPickerView extends StatefulWidget {
 
 class _MapPickerViewState extends State<MapPickerView> {
   LatLng? _selected;
+  final MapController _mapa = MapController();
 
   // Centro por defecto: Lima, Peru
   static const _limaCenter = LatLng(-12.0464, -77.0428);
@@ -88,6 +97,28 @@ class _MapPickerViewState extends State<MapPickerView> {
     super.initState();
     if (widget.initialLat != null && widget.initialLng != null) {
       _selected = LatLng(widget.initialLat!, widget.initialLng!);
+    }
+  }
+
+  /// Cuando el padre entrega una ubicación nueva (por GPS), mueve el mapa a ella.
+  @override
+  void didUpdateWidget(covariant MapPickerView old) {
+    super.didUpdateWidget(old);
+    final lat = widget.initialLat, lng = widget.initialLng;
+    if (lat == null || lng == null) {
+      if (old.initialLat != null) setState(() => _selected = null);
+      return;
+    }
+    if (lat != old.initialLat || lng != old.initialLng) {
+      final p = LatLng(lat, lng);
+      if (_selected != p) {
+        setState(() => _selected = p);
+        try {
+          _mapa.move(p, 16);
+        } catch (_) {
+          // El mapa aún no se dibujó: initialCenter ya usa _selected.
+        }
+      }
     }
   }
 
@@ -111,9 +142,10 @@ class _MapPickerViewState extends State<MapPickerView> {
           child: Stack(
             children: [
               FlutterMap(
+                mapController: _mapa,
                 options: MapOptions(
                   initialCenter: center,
-                  initialZoom: 13.0,
+                  initialZoom: _selected == null ? 13.0 : 16.0,
                   onTap: _onTap,
                   // Dentro de un formulario con scroll, la rueda del mouse debe
                   // desplazar la pagina y no hacer zoom (se mantiene el pellizco).
@@ -174,6 +206,48 @@ class _MapPickerViewState extends State<MapPickerView> {
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              if (widget.onUsarMiUbicacion != null)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Semantics(
+                    button: true,
+                    label: 'Usar mi ubicación actual',
+                    excludeSemantics: true,
+                    onTap: widget.buscandoUbicacion
+                        ? null
+                        : widget.onUsarMiUbicacion,
+                    child: Material(
+                      color: Colors.white,
+                      shape: const CircleBorder(),
+                      elevation: 3,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: widget.buscandoUbicacion
+                            ? null
+                            : widget.onUsarMiUbicacion,
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: Center(
+                            child: widget.buscandoUbicacion
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.my_location,
+                                    color: Color(0xFF6D28D9),
+                                  ),
+                          ),
                         ),
                       ),
                     ),

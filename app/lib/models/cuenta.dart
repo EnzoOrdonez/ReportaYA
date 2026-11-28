@@ -12,6 +12,9 @@ class CrearCuentaRequest {
   final String correo;
   final bool activo;
 
+  /// RF-21: el backend exige `true` y guarda la fecha y versión aceptadas.
+  final bool aceptaPrivacidad;
+
   CrearCuentaRequest({
     this.tipoCuenta = TipoCuenta.CIUDADANO,
     required this.usuario,
@@ -22,6 +25,7 @@ class CrearCuentaRequest {
     required this.telefono,
     required this.correo,
     this.activo = true,
+    this.aceptaPrivacidad = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -34,6 +38,7 @@ class CrearCuentaRequest {
     'telefono': telefono,
     'correo': correo,
     'activo': activo,
+    'aceptaPrivacidad': aceptaPrivacidad,
   };
 }
 

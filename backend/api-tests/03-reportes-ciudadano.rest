@@ -4,7 +4,7 @@
 ### ==========================================
 ### INSTRUCCION: Primero ejecuta el login de ciudadano en 01-auth.rest
 ### y copia el token de la respuesta aqui abajo:
-@token = PEGA_AQUI_EL_TOKEN_DEL_LOGIN
+@token = eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxIiwidXN1YXJpbyI6ImNpdWRhZGFubyIsInRpcG9DdWVudGEiOiJDSVVEQURBTk8iLCJpYXQiOjE3ODMwODIzMjksImV4cCI6MTc4MzE2ODcyOX0.BrPGqkZ-sM4CdwsHx1dFQtEmK3AV7f_Cx5FoAxviNEjDUtDHNN7KGxGrQn6UN2XPAXGU6PU-6fjfNw6wZ8ovBw
 ### ==========================================
 ### PASO 1: Crear reporte (sin fotos)
 ### ==========================================

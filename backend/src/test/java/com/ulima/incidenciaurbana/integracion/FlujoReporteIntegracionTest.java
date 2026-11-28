@@ -82,7 +82,7 @@ class FlujoReporteIntegracionTest {
     void flujoCompleto() throws Exception {
         mvc.perform(post("/api/cuenta").contentType(MediaType.APPLICATION_JSON).content(
                 "{\"usuario\":\"ana" + s + "\",\"contrasena\":\"Clave123\",\"nombres\":\"Ana\",\"apellidos\":\"Quispe\",\"dni\":\"" + dniNumerico() + "\","
-                        + "\"telefono\":\"987654321\",\"correo\":\"ana" + s + "@mail.pe\",\"tipoCuenta\":\"CIUDADANO\"}"))
+                        + "\"telefono\":\"987654321\",\"correo\":\"ana" + s + "@mail.pe\",\"tipoCuenta\":\"CIUDADANO\",\"aceptaPrivacidad\":true}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.activo").value(true));
         String ana = login("ana" + s).get("token").asText();
         String op = login("op" + s).get("token").asText();
@@ -127,18 +127,18 @@ class FlujoReporteIntegracionTest {
     void regresiones() throws Exception {
         mvc.perform(post("/api/cuenta").contentType(MediaType.APPLICATION_JSON).content(
                 "{\"usuario\":\"dni" + s + "\",\"contrasena\":\"Clave123\",\"nombres\":\"A\",\"apellidos\":\"B\",\"dni\":\"ABCDEFGH\","
-                        + "\"telefono\":\"987654321\",\"correo\":\"dni" + s + "@mail.pe\",\"tipoCuenta\":\"CIUDADANO\"}"))
+                        + "\"telefono\":\"987654321\",\"correo\":\"dni" + s + "@mail.pe\",\"tipoCuenta\":\"CIUDADANO\",\"aceptaPrivacidad\":true}"))
                 .andExpect(status().isBadRequest());
 
         mvc.perform(post("/api/cuenta").contentType(MediaType.APPLICATION_JSON).content(
                 "{\"usuario\":\"leo" + s + "\",\"contrasena\":\"Clave123\",\"nombres\":\"Leo\",\"apellidos\":\"Paz\",\"dni\":\"" + dniNumerico() + "\","
-                        + "\"telefono\":\"987654321\",\"correo\":\"leo" + s + "@mail.pe\",\"tipoCuenta\":\"CIUDADANO\"}"))
+                        + "\"telefono\":\"987654321\",\"correo\":\"leo" + s + "@mail.pe\",\"tipoCuenta\":\"CIUDADANO\",\"aceptaPrivacidad\":true}"))
                 .andExpect(status().isCreated());
         String leo = login("leo" + s).get("token").asText();
         String op = login("op" + s).get("token").asText();
         JsonNode tec = login("tec" + s);
         long id = body(conToken(post("/api/reportes"), leo,
-                "{\"titulo\":\"Basura\",\"descripcion\":\"Basura acumulada\",\"tipoProblema\":\"RESIDUOS\","
+                "{\"titulo\":\"Basura en la esquina\",\"descripcion\":\"Basura acumulada junto al parque\",\"tipoProblema\":\"RESIDUOS\","
                         + "\"ubicacion\":{\"latitud\":-12.1,\"longitud\":-77.0}}")).get("id").asLong();
         conToken(post("/api/operador/reportes/" + id + "/aceptar"), op, "{}").andExpect(status().isOk());
         conToken(post("/api/asignaciones"), op, "{\"reporteId\":" + id + ",\"tecnicoId\":" + tec.get("cuentaId").asLong() + "}")

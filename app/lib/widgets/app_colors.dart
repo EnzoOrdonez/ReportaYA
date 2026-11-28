@@ -15,18 +15,20 @@ class AppColors {
   static const Color secondary = Color(0xFF6A9FFF);
   static const Color textPrimary = Color(0xFF1F1F29);
   static const Color error = Color(0xFFDC2626);
-  static const Color tecnicoPrimary = Color(0xFF4CAF50);
-  static const Color tecnicoSecondary = Color(0xFF45A049);
+  static const Color tecnicoPrimary = Color(0xFF2E7D32);
+  static const Color tecnicoSecondary = Color(0xFF388E3C);
 
   static const List<Color> ciudadanoGradient = [primary, secondary];
   static const List<Color> operadorGradient = [primary, secondary];
   static const List<Color> tecnicoGradient = [tecnicoPrimary, tecnicoSecondary];
 
-  // Estados (4, alineados a los CU)
-  static const Color estadoPendiente = Color(0xFFFF6B6B);
-  static const Color estadoRevision = Color(0xFFFFA500);
-  static const Color estadoFinalizado = Color(0xFF4CAF50);
-  static const Color estadoRechazado = Color(0xFF9E9E9E);
+  // Estados (4, alineados a los CU). Se usan como fondo de etiquetas y botones
+  // con texto blanco, por eso cumplen contraste AA (4,5:1) sobre blanco:
+  // rojo 4,98:1, ámbar 5,02:1, verde 5,13:1 y gris 6,19:1.
+  static const Color estadoPendiente = Color(0xFFD32F2F);
+  static const Color estadoRevision = Color(0xFFB45309);
+  static const Color estadoFinalizado = Color(0xFF2E7D32);
+  static const Color estadoRechazado = Color(0xFF616161);
 
   static Color forEstado(String estado) {
     switch (estado.toUpperCase()) {

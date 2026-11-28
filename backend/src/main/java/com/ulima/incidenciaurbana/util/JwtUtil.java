@@ -33,6 +33,9 @@ public class JwtUtil {
                 .subject(String.valueOf(cuentaId))
                 .claim("usuario", usuario)
                 .claim("tipoCuenta", tipoCuenta)
+                // "iat" va en segundos; esta marca en milisegundos permite revocar
+                // sin dejar vivo un token emitido en el mismo segundo del cierre.
+                .claim("emitidoMs", now.getTime())
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(signingKey)

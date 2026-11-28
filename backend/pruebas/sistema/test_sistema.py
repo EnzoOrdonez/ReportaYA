@@ -94,9 +94,9 @@ def test_cp11_dni_letras(request):
     assert r.status_code == 400
 
 
-@caso("CP-12", "VL", "RF-01", "Contrasena de 5 y de 6 caracteres", "400 y 201")
+@caso("CP-12", "VL", "RF-01 / HU-01", "Contrasena de 7 y de 8 caracteres", "400 y 201")
 def test_cp12_clave_limites(request):
-    res = [registrar(contrasena="12345")[0].status_code, registrar(contrasena="123456")[0].status_code]
+    res = [registrar(contrasena="1234567")[0].status_code, registrar(contrasena="12345678")[0].status_code]
     request.node._obtenido = str(res)
     assert res == [400, 201]
 
@@ -133,26 +133,28 @@ def test_cp16_recuperar_uniforme(request, ciu):
 
 
 @caso("CP-17", "TE", "RF-03 / HU-05", "Restablecer con codigo valido, luego reutilizarlo", "200, login con la nueva clave, 400 al reutilizar")
-def test_cp17_restablecer(request, ciu):
-    correo = ciu["datos"]["correo"]
+def test_cp17_restablecer(request):
+    c = ciudadano_nuevo()  # cuenta propia: restablecer revoca sus sesiones
+    correo = c["datos"]["correo"]
     requests.post(f"{API}/auth/recuperar-password", json={"correo": correo}, timeout=30)
-    cod = sql(f"select c.token_recuperacion from cuentas c join personas p on p.id=c.persona_id where p.correo='{correo}'")
+    cod = codigo_de(correo)
     assert len(cod) == 6
-    r1 = requests.post(f"{API}/auth/restablecer-password", json={"token": cod, "nuevaContrasena": "Nueva456"}, timeout=30)
-    l = login(ciu["datos"]["usuario"], "Nueva456")
-    r2 = requests.post(f"{API}/auth/restablecer-password", json={"token": cod, "nuevaContrasena": "Otra4567"}, timeout=30)
+    r1 = requests.post(f"{API}/auth/restablecer-password", json={"correo": correo, "token": cod, "nuevaContrasena": "Nueva4567"}, timeout=30)
+    l = login(c["datos"]["usuario"], "Nueva4567")
+    r2 = requests.post(f"{API}/auth/restablecer-password", json={"correo": correo, "token": cod, "nuevaContrasena": "Otra45678"}, timeout=30)
     request.node._obtenido = f"{r1.status_code}, login {l.status_code}, reuso {r2.status_code}"
     assert (r1.status_code, l.status_code, r2.status_code) == (200, 200, 400)
 
 
-@caso("CP-18", "VL", "RF-03", "Codigo vencido (31 min) y clave nueva de 5 caracteres", "400 en ambos")
-def test_cp18_codigo_vencido(request, ciu):
-    correo = ciu["datos"]["correo"]
+@caso("CP-18", "VL", "RF-03 / HU-05", "Codigo vencido (31 min) y clave nueva de 7 caracteres", "400 en ambos")
+def test_cp18_codigo_vencido(request):
+    c = ciudadano_nuevo()
+    correo = c["datos"]["correo"]
     requests.post(f"{API}/auth/recuperar-password", json={"correo": correo}, timeout=30)
-    cod = sql(f"select c.token_recuperacion from cuentas c join personas p on p.id=c.persona_id where p.correo='{correo}'")
-    corta = requests.post(f"{API}/auth/restablecer-password", json={"token": cod, "nuevaContrasena": "12345"}, timeout=30)
+    cod = codigo_de(correo)
+    corta = requests.post(f"{API}/auth/restablecer-password", json={"correo": correo, "token": cod, "nuevaContrasena": "1234567"}, timeout=30)
     sql(f"update cuentas set token_recuperacion_expiracion = now() - interval '1 minute' where token_recuperacion='{cod}'")
-    vencido = requests.post(f"{API}/auth/restablecer-password", json={"token": cod, "nuevaContrasena": "Nueva456"}, timeout=30)
+    vencido = requests.post(f"{API}/auth/restablecer-password", json={"correo": correo, "token": cod, "nuevaContrasena": "Nueva4567"}, timeout=30)
     request.node._obtenido = f"clave corta {corta.status_code}, vencido {vencido.status_code}"
     assert corta.status_code == 400 and vencido.status_code == 400
 
@@ -173,19 +175,18 @@ def test_cp20_tipos(request, ciu):
     assert set(res.values()) == {201}
 
 
-@caso("CP-21", "VL", "RF-19", "Titulo vacio, de 255 y de 256 caracteres", "400, 201, 400")
+@caso("CP-21", "VL", "RF-19 / HU-03", "Titulo vacio y de 4, 5, 100 y 101 caracteres", "400, 400, 201, 201, 400")
 def test_cp21_titulo_limites(request, ciu):
-    res = [crear_reporte(ciu["token"], titulo="   ").status_code, crear_reporte(ciu["token"], titulo="T" * 255).status_code,
-           crear_reporte(ciu["token"], titulo="T" * 256).status_code]
+    res = [crear_reporte(ciu["token"], titulo=t).status_code for t in ("   ", "T" * 4, "T" * 5, "T" * 100, "T" * 101)]
     request.node._obtenido = str(res)
-    assert res == [400, 201, 400]
+    assert res == [400, 400, 201, 201, 400]
 
 
-@caso("CP-22", "VL", "RF-19", "Descripcion de 1000 y de 1001 caracteres", "201 y 400")
+@caso("CP-22", "VL", "RF-19 / HU-03", "Descripcion de 19, 20, 1000 y 1001 caracteres", "400, 201, 201, 400")
 def test_cp22_descripcion_limites(request, ciu):
-    res = [crear_reporte(ciu["token"], descripcion="d" * 1000).status_code, crear_reporte(ciu["token"], descripcion="d" * 1001).status_code]
+    res = [crear_reporte(ciu["token"], descripcion="d" * n).status_code for n in (19, 20, 1000, 1001)]
     request.node._obtenido = str(res)
-    assert res == [201, 400]
+    assert res == [400, 201, 201, 400]
 
 
 @caso("CP-23", "PE", "RF-05 / HU-17", "Reporte sin ubicacion y sin latitud", "400 en ambos")
@@ -274,6 +275,26 @@ def test_cp32_ficha_permisos(request, ciu, ciu2, op, tec2):
     res = [requests.get(f"{API}/reportes/{rid}", headers=h(t), timeout=30).status_code for t in (ciu["token"], ciu2["token"], op["token"], tec2["token"])]
     request.node._obtenido = str(res)
     assert res == [200, 403, 200, 403]
+
+
+@caso("CP-60", "TD", "RF-21 / HU-20", "Registro sin aceptar el aviso de privacidad y con aceptacion", "400 con mensaje claro y 201")
+def test_cp60_aviso_privacidad(request):
+    sin, _ = registrar(aceptaPrivacidad=None)
+    falso, _ = registrar(aceptaPrivacidad=False)
+    con, b = registrar()
+    request.node._obtenido = f"{sin.status_code}, {falso.status_code}, {con.status_code}; {sin.json().get('error', '')[:60]}"
+    assert sin.status_code == 400 and falso.status_code == 400 and con.status_code == 201
+    assert "privacidad" in sin.json()["error"].lower()
+
+
+@caso("CP-61", "EG", "RF-02 / RNF-03", "Cinco claves incorrectas seguidas bloquean el usuario aunque luego use la correcta", "401 x5, luego 429 incluso con la clave correcta")
+def test_cp61_bloqueo_por_intentos(request):
+    r, b = registrar()
+    assert r.status_code == 201
+    fallos = [login(b["usuario"], "clave-erronea").status_code for _ in range(5)]
+    despues = login(b["usuario"], b["contrasena"])
+    request.node._obtenido = f"{fallos}, luego {despues.status_code}"
+    assert fallos == [401] * 5 and despues.status_code == 429 and "minutos" in despues.json()["error"]
 
 
 @caso("CP-58", "TD", "RF-16 / RNF-03", "Fotos del reporte: duenio, otro ciudadano, operador, tecnico no asignado", "200, 403, 200, 403")
@@ -529,3 +550,78 @@ def test_cp57_telefono(request):
     res = [registrar(telefono="98765432")[0].status_code, registrar(telefono="98765432a")[0].status_code]
     request.node._obtenido = str(res)
     assert res == [400, 400]
+
+
+# ------------------------------------------------------------------ version 1.1.4 (HU-01, HU-02, HU-05)
+def codigo_de(correo):
+    return sql(f"select c.token_recuperacion from cuentas c join personas p on p.id=c.persona_id where p.correo='{correo}'")
+
+
+def restablecer(correo, cod, clave="Nueva4567"):
+    return requests.post(f"{API}/auth/restablecer-password", json={"correo": correo, "token": cod, "nuevaContrasena": clave}, timeout=30)
+
+
+@caso("CP-62", "EG", "RF-03 / HU-05", "El codigo solo vale con el correo de su cuenta; 5 codigos errados bloquean ese correo",
+      "400 con otro correo, 200 con el propio; 400 x5 y luego 429 incluso con un codigo correcto")
+def test_cp62_codigo_ligado_al_correo(request):
+    a, b = ciudadano_nuevo(), ciudadano_nuevo()
+    ca, cb = a["datos"]["correo"], b["datos"]["correo"]
+    requests.post(f"{API}/auth/recuperar-password", json={"correo": ca}, timeout=30)
+    cod = codigo_de(ca)
+    ajeno = restablecer(cb, cod).status_code
+    propio = restablecer(ca, cod).status_code
+    cc = ciudadano_nuevo()["datos"]["correo"]  # cuenta sin fallos previos
+    requests.post(f"{API}/auth/recuperar-password", json={"correo": cc}, timeout=30)
+    cod_c = codigo_de(cc)
+    errados = [restablecer(cc, "ZZZZ99").status_code for _ in range(5)]
+    tras_bloqueo = restablecer(cc, cod_c).status_code
+    request.node._obtenido = f"ajeno {ajeno}, propio {propio}; errados {errados}, luego {tras_bloqueo}"
+    assert (ajeno, propio) == (400, 200) and errados == [400] * 5 and tras_bloqueo == 429
+
+
+@caso("CP-63", "VL", "RF-03 / HU-05", "Sexta solicitud de recuperacion en una hora, con correo registrado y sin registrar",
+      "200 x5 y 429 en la sexta, igual para ambos correos (no revela cuentas)")
+def test_cp63_limite_recuperacion(request):
+    c = ciudadano_nuevo()
+    res = {}
+    for correo in (c["datos"]["correo"], f"nadie{sufijo()}@prueba.pe"):
+        res[correo] = [requests.post(f"{API}/auth/recuperar-password", json={"correo": correo}, timeout=30).status_code
+                       for _ in range(6)]
+    request.node._obtenido = str(list(res.values()))
+    assert all(v == [200] * 5 + [429] for v in res.values())
+
+
+@caso("CP-64", "TE", "RF-02 / HU-02", "Cerrar sesion invalida el token en el servidor", "200 antes, 200 al cerrar, 401 con el token viejo y 200 con un login nuevo")
+def test_cp64_logout_revoca(request):
+    c = ciudadano_nuevo()
+    url = f"{API}/reportes/cuenta/{c['id']}?page=0"
+    antes = requests.get(url, headers=h(c["token"]), timeout=30).status_code
+    salir = requests.post(f"{API}/auth/logout", headers=h(c["token"]), timeout=30).status_code
+    viejo = requests.get(url, headers=h(c["token"]), timeout=30)
+    nuevo = token(c["datos"]["usuario"], c["datos"]["contrasena"])["token"]
+    despues = requests.get(url, headers=h(nuevo), timeout=30).status_code
+    request.node._obtenido = f"{antes}, logout {salir}, viejo {viejo.status_code}, nuevo {despues}"
+    assert (antes, salir, viejo.status_code, despues) == (200, 200, 401, 200)
+    assert "sesión" in viejo.json()["error"]
+
+
+@caso("CP-65", "TE", "RF-03 / HU-05", "Restablecer la contrasena cierra las sesiones abiertas", "200 antes y 401 con el token anterior al cambio")
+def test_cp65_reset_revoca(request):
+    c = ciudadano_nuevo()
+    url = f"{API}/reportes/cuenta/{c['id']}?page=0"
+    antes = requests.get(url, headers=h(c["token"]), timeout=30).status_code
+    time.sleep(1.1)  # el corte va en segundos, igual que el "iat" del token
+    correo = c["datos"]["correo"]
+    requests.post(f"{API}/auth/recuperar-password", json={"correo": correo}, timeout=30)
+    cambio = restablecer(correo, codigo_de(correo)).status_code
+    despues = requests.get(url, headers=h(c["token"]), timeout=30).status_code
+    request.node._obtenido = f"{antes}, cambio {cambio}, token anterior {despues}"
+    assert (antes, cambio, despues) == (200, 200, 401)
+
+
+@caso("CP-66", "PE", "RF-01 / HU-01", "Nombres con tilde, apostrofe y guion; con digitos; de 1 caracter", "201, 400, 400")
+def test_cp66_nombres(request):
+    res = [registrar(nombres="María José", apellidos="D'Ángelo Pérez-Rojas")[0].status_code,
+           registrar(nombres="Ana2")[0].status_code, registrar(apellidos="Q")[0].status_code]
+    request.node._obtenido = str(res)
+    assert res == [201, 400, 400]

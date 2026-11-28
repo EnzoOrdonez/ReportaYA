@@ -9,7 +9,7 @@ Backend REST API del sistema de gestion de reportes urbanos **ReportaYA**, desar
 - PostgreSQL
 - JWT (jjwt 0.12.3) para autenticacion
 - BCrypt para hash de contrasenas
-- Resend para verificacion de correo y recuperacion de contrasena
+- Brevo (API HTTP) en Render o Resend para verificacion de correo y recuperacion de contrasena
 - Firebase Storage para almacenamiento de fotos
 - Firebase Cloud Messaging para notificaciones push
 
@@ -91,6 +91,9 @@ Autenticacion via JWT con `HandlerInterceptor`:
 - **Rutas publicas** (sin token): `/api/auth/**`, `/api/cuenta`, `/api/cuenta/verificar`, `/api/cuenta/reenviar-verificacion`
 - **Rutas protegidas** (requieren `Authorization: Bearer <token>`): todo lo demas bajo `/api/**`
 - **Fotos** (`/media/fotos/{clave}`): publicas pero con clave UUID no adivinable.
+- **Fuerza bruta (1.1.4):** 5 claves incorrectas seguidas bloquean el usuario 5 minutos (429). 5 codigos de recuperacion errados bloquean ese correo 5 minutos. La recuperacion acepta 5 solicitudes por hora por correo y por IP (`APP_RECUPERACION_MAX_POR_HORA`, `APP_RECUPERACION_MAX_POR_HORA_IP`; 0 desactiva).
+- **Revocacion de sesiones (1.1.4):** `POST /api/auth/logout` y el cambio de contrasena guardan `cuentas.sesiones_validas_desde`; los JWT emitidos antes responden 401 (HU-02 CA2 y HU-05 CA2). Cerrar sesion cierra la sesion en todos los dispositivos.
+- **Privacidad (1.1.4):** el registro exige `"aceptaPrivacidad": true` y guarda fecha y version del aviso (RF-21).
 
 ### Permisos por rol (el actor siempre sale del token, nunca del body)
 
@@ -122,7 +125,8 @@ El token se obtiene con `POST /api/auth/login` y tiene validez de 24 horas.
 |---|---|---|---|
 | POST | `/api/auth/login` | Iniciar sesion (retorna 403 si la cuenta aun no verifico su correo) | CU-01 |
 | POST | `/api/auth/recuperar-password` | Solicitar codigo de recuperacion por correo (`{"correo":"..."}`) | CU-03 |
-| POST | `/api/auth/restablecer-password` | Restablecer contrasena usando token (`{"token":"...","nuevaContrasena":"..."}`) | CU-03 |
+| POST | `/api/auth/restablecer-password` | Restablecer contrasena con el codigo y el correo de la cuenta (`{"correo":"...","token":"...","nuevaContrasena":"..."}`) | CU-03 |
+| POST | `/api/auth/logout` | Cierra la sesion en el servidor: el token enviado y los anteriores dejan de valer | CU-01 |
 
 ### Registro (`/api/cuenta`) — Publico
 
@@ -219,8 +223,9 @@ token temporal y se envia un enlace por Resend.
 
 ```
 1. Usuario pide recuperar contrasena  → POST /api/auth/recuperar-password       (correo enviado)
-2. Usuario abre el enlace del correo  → reportaya://reset-password?token=...&correo=...
-3. Usuario ingresa nueva contrasena   → POST /api/auth/restablecer-password     (cambia password)
+2. Usuario abre el enlace del correo  → {APP_WEB_URL}#/reset-password?correo=...&codigo=...
+   (o escribe/pega el codigo en la app Android)
+3. Usuario ingresa nueva contrasena   → POST /api/auth/restablecer-password     (cambia password y cierra sesiones)
 4. Usuario inicia sesion              → POST /api/auth/login                    → 200 + JWT
 ```
 
@@ -236,15 +241,16 @@ Payload para cambiar la contrasena:
 
 ```json
 {
-  "token": "TOKEN_DEL_CORREO",
-  "nuevaContrasena": "123456"
+  "correo": "ana.quispe@mail.com",
+  "token": "A3F9K2",
+  "nuevaContrasena": "NuevaClave2026"
 }
 ```
 
 - **Codigo:** 6 caracteres alfanumericos (sin 0/O, 1/I/L) con validez de 30 minutos, guardado en `cuentas.token_recuperacion`; se limpia al restablecer la contrasena.
-- **Sin enlace:** el usuario escribe el codigo en la app (no hay deep link).
+- **Enlace:** el boton del correo abre la version web con el correo y el codigo ya puestos (`APP_WEB_URL`); el codigo solo vale junto con el correo de su cuenta.
 - **Modo dev:** si `RESEND_API_KEY` esta vacio, el codigo se imprime en consola. Con API key nunca se escribe en el log.
-- **Validacion backend:** la nueva contrasena debe tener al menos 6 caracteres.
+- **Validacion backend:** la nueva contrasena debe tener al menos 8 caracteres (HU-01, HU-05).
 - **Entregabilidad:** el correo se envia con version `html` y `text`.
 
 Probar el flujo de login y recuperacion con `api-tests/01-auth.rest`.

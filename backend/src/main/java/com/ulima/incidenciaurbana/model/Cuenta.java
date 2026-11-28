@@ -49,6 +49,17 @@ public abstract class Cuenta {
     @Column(name = "token_recuperacion_expiracion")
     private LocalDateTime tokenRecuperacionExpiracion;
 
+    /** Tokens emitidos antes de esta fecha ya no valen (cierre de sesión o nueva contraseña). */
+    @Column(name = "sesiones_validas_desde")
+    private LocalDateTime sesionesValidasDesde;
+
+    /** RF-21: cuándo aceptó el aviso de privacidad y qué versión del aviso. */
+    @Column(name = "fecha_aceptacion_privacidad")
+    private LocalDateTime fechaAceptacionPrivacidad;
+
+    @Column(name = "version_aviso_privacidad", length = 20)
+    private String versionAvisoPrivacidad;
+
     // Constructors
     public Cuenta() {
         this.fechaCreacion = LocalDateTime.now();
@@ -69,9 +80,32 @@ public abstract class Cuenta {
         reporte.setCuenta(this);
     }
 
+    public void aceptarAvisoPrivacidad(String version) {
+        this.fechaAceptacionPrivacidad = LocalDateTime.now();
+        this.versionAvisoPrivacidad = version;
+    }
+
+    public LocalDateTime getFechaAceptacionPrivacidad() {
+        return fechaAceptacionPrivacidad;
+    }
+
+    public String getVersionAvisoPrivacidad() {
+        return versionAvisoPrivacidad;
+    }
+
     public void cambiarContrasena(String nuevaContrasenaHash) {
         this.contrasenaHash = nuevaContrasenaHash;
         this.fechaActualizacion = LocalDateTime.now();
+    }
+
+    /** Invalida todos los tokens emitidos hasta ahora y devuelve la fecha de corte. */
+    public LocalDateTime revocarSesiones() {
+        this.sesionesValidasDesde = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
+        return this.sesionesValidasDesde;
+    }
+
+    public LocalDateTime getSesionesValidasDesde() {
+        return sesionesValidasDesde;
     }
 
     @PreUpdate

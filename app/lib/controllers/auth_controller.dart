@@ -76,10 +76,15 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> logout() async {
+  Future<void> logout({bool avisarServidor = true}) async {
+    final token = usuario.value?.token;
     usuario.value = null;
     estado.value = AuthState.unauthenticated;
     await _box.remove(_storageKey);
+    // Sin await: cerrar sesión no espera a que el servidor gratis despierte.
+    if (avisarServidor && token != null && token.isNotEmpty) {
+      _auth.cerrarSesionEnServidor(token);
+    }
   }
 
   bool _cerrandoSesion = false;
@@ -90,7 +95,7 @@ class AuthController extends GetxController {
     if (_cerrandoSesion || usuario.value == null) return;
     _cerrandoSesion = true;
     try {
-      await logout();
+      await logout(avisarServidor: false);
       AppToast.info('Tu sesión expiró. Inicia sesión nuevamente.');
       Get.offAllNamed(AppRoutes.login);
     } finally {
@@ -111,14 +116,15 @@ class AuthController extends GetxController {
   }
 
   Future<void> restablecerContrasena(
+    String correo,
     String token,
     String nueva,
     String confirmacion,
   ) async {
     if (nueva != confirmacion) throw Exception('Las contraseñas no coinciden');
-    if (nueva.length < 6) {
-      throw Exception('La contraseña debe tener al menos 6 caracteres');
+    if (nueva.length < 8) {
+      throw Exception('La contraseña debe tener al menos 8 caracteres');
     }
-    await _auth.restablecerContrasena(token, nueva);
+    await _auth.restablecerContrasena(correo, token, nueva);
   }
 }

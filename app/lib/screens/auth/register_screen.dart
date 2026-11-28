@@ -30,6 +30,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
       k: TextEditingController(),
   };
   bool _loading = false;
+  bool _verClave = false;
+  bool _aceptaPrivacidad = false;
+
+  /// HU-01: nombres y apellidos de 2 a 100 caracteres; se admiten tildes,
+  /// espacios, guiones y apóstrofes.
+  static final _reNombre = RegExp(r"^\p{L}[\p{L}\p{M} '’-]*$", unicode: true);
+
+  String? _validarNombre(String? v) {
+    final t = v!.trim();
+    if (t.isEmpty) return 'Requerido';
+    if (t.length < 2 || t.length > 100) return 'Entre 2 y 100 caracteres';
+    if (!_reNombre.hasMatch(t)) {
+      return 'Solo letras, espacios, guiones y apóstrofes';
+    }
+    return null;
+  }
 
   Future<void> _registrar() async {
     if (!_formKey.currentState!.validate()) return;
@@ -45,6 +61,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           dni: _c['dni']!.text.trim(),
           telefono: _c['telefono']!.text.trim(),
           correo: _c['correo']!.text.trim(),
+          aceptaPrivacidad: _aceptaPrivacidad,
         ),
       );
       // Si el servidor exige verificar el correo, la cuenta nace inactiva
@@ -103,14 +120,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       _field(
                         'nombres',
                         'Nombres',
-                        validator: (v) =>
-                            v!.trim().isEmpty ? 'Requerido' : null,
+                        autofill: AutofillHints.givenName,
+                        validator: _validarNombre,
                       ),
                       _field(
                         'apellidos',
                         'Apellidos',
-                        validator: (v) =>
-                            v!.trim().isEmpty ? 'Requerido' : null,
+                        autofill: AutofillHints.familyName,
+                        validator: _validarNombre,
                       ),
                       _field(
                         'dni',
@@ -129,6 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         'telefono',
                         'Teléfono',
                         keyboardType: TextInputType.phone,
+                        autofill: AutofillHints.telephoneNumberNational,
                         validator: (v) {
                           if (v!.trim().isEmpty) return 'Requerido';
                           if (v.trim().length != 9 ||
@@ -142,6 +160,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         'correo',
                         'Correo electrónico',
                         keyboardType: TextInputType.emailAddress,
+                        autofill: AutofillHints.email,
                         validator: (v) {
                           if (v!.trim().isEmpty) return 'Requerido';
                           if (!RegExp(
@@ -155,15 +174,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       _field(
                         'usuario',
                         'Usuario',
-                        validator: (v) =>
-                            v!.trim().isEmpty ? 'Requerido' : null,
+                        autofill: AutofillHints.newUsername,
+                        validator: (v) {
+                          final t = v!.trim();
+                          if (t.isEmpty) return 'Requerido';
+                          if (t.length < 3 || t.length > 50) {
+                            return 'Entre 3 y 50 caracteres';
+                          }
+                          return null;
+                        },
                       ),
                       _field(
                         'contrasena',
                         'Contraseña',
-                        obscure: true,
+                        obscure: !_verClave,
+                        autofill: AutofillHints.newPassword,
+                        suffix: IconButton(
+                          tooltip: _verClave
+                              ? 'Ocultar contraseña'
+                              : 'Mostrar contraseña',
+                          icon: Icon(
+                            _verClave ? Icons.visibility_off : Icons.visibility,
+                          ),
+                          onPressed: () =>
+                              setState(() => _verClave = !_verClave),
+                        ),
                         validator: (v) =>
-                            v!.length < 6 ? 'Mínimo 6 caracteres' : null,
+                            v!.length < 8 ? 'Mínimo 8 caracteres' : null,
+                      ),
+                      _CasillaPrivacidad(
+                        valor: _aceptaPrivacidad,
+                        onChanged: (v) => setState(() => _aceptaPrivacidad = v),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -213,6 +254,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     bool obscure = false,
     String? Function(String?)? validator,
     TextInputType? keyboardType,
+    String? autofill,
+    Widget? suffix,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 10),
     child: TextFormField(
@@ -220,8 +263,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       obscureText: obscure,
       keyboardType: keyboardType,
       validator: validator,
+      autofillHints: autofill == null ? null : [autofill],
       decoration: InputDecoration(
         labelText: label,
+        suffixIcon: suffix,
         filled: true,
         fillColor: const Color(0xFFF5F5F5),
         border: OutlineInputBorder(
@@ -231,4 +276,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     ),
   );
+}
+
+/// RF-21 / HU-01: aceptación obligatoria del aviso de privacidad.
+class _CasillaPrivacidad extends StatelessWidget {
+  const _CasillaPrivacidad({required this.valor, required this.onChanged});
+  final bool valor;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return FormField<bool>(
+      initialValue: valor,
+      validator: (_) =>
+          valor ? null : 'Debes aceptar el aviso de privacidad para continuar',
+      builder: (estado) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Checkbox(
+                value: valor,
+                activeColor: AppColors.primary,
+                onChanged: (v) {
+                  onChanged(v ?? false);
+                  estado.didChange(v);
+                  // Al marcarla se quita el mensaje de error sin esperar otro envío.
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (estado.mounted && estado.hasError) estado.validate();
+                  });
+                },
+                semanticLabel: 'Acepto el aviso de privacidad',
+              ),
+              Expanded(
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    const Text('Acepto el ', style: TextStyle(fontSize: 13)),
+                    InkWell(
+                      onTap: () => Get.toNamed(AppRoutes.privacidad),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Text(
+                            'aviso de privacidad',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.enlace,
+                              fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (estado.hasError)
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Text(
+                estado.errorText!,
+                style: const TextStyle(fontSize: 12, color: Color(0xFFB3261E)),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

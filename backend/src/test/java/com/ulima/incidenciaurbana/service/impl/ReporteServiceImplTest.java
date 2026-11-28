@@ -76,7 +76,7 @@ class ReporteServiceImplTest {
     @Test
     @DisplayName("Crear un reporte valido lo deja PENDIENTE y registra el primer historial")
     void crearReporteValido() {
-        ReporteDTO res = servicio.crearReporte(dto("Poste caido", "Poste inclinado", -12.08, -77.03, "Av. Arequipa 1234"));
+        ReporteDTO res = servicio.crearReporte(dto("Poste caido", "Poste inclinado sobre la vereda", -12.08, -77.03, "Av. Arequipa 1234"));
         assertThat(res.getEstado()).isEqualTo(EstadoReporte.PENDIENTE);
         ArgumentCaptor<HistorialEstado> h = ArgumentCaptor.forClass(HistorialEstado.class);
         verify(historial).save(h.capture());
@@ -85,8 +85,9 @@ class ReporteServiceImplTest {
     }
 
     @ParameterizedTest(name = "titulo de {0} caracteres y descripcion de {1} -> valido={2}")
-    @CsvSource({"0,10,false", "1,10,true", "255,10,true", "256,10,false", "10,0,false", "10,1000,true", "10,1001,false"})
-    @DisplayName("Valores limite de titulo (1..255) y descripcion (1..1000)")
+    @CsvSource({"0,30,false", "4,30,false", "5,30,true", "100,30,true", "101,30,false",
+                "10,0,false", "10,19,false", "10,20,true", "10,1000,true", "10,1001,false"})
+    @DisplayName("Valores limite de HU-03: titulo (5..100) y descripcion (20..1000)")
     void limitesDeTexto(int largoTitulo, int largoDescripcion, boolean valido) {
         ReporteDTO d = dto("t".repeat(largoTitulo), "d".repeat(largoDescripcion), -12.0, -77.0, "Lima");
         if (valido) {
@@ -100,14 +101,14 @@ class ReporteServiceImplTest {
     @Test
     @DisplayName("Sin ubicacion o sin coordenadas no se crea el reporte")
     void ubicacionObligatoria() {
-        assertThatThrownBy(() -> servicio.crearReporte(dto("Poste", "Desc", null, null, null))).hasMessageContaining("ubicacion");
-        assertThatThrownBy(() -> servicio.crearReporte(dto("Poste", "Desc", null, -77.0, "Lima"))).hasMessageContaining("latitud");
+        assertThatThrownBy(() -> servicio.crearReporte(dto("Poste caído", "Poste inclinado sobre la vereda", null, null, null))).hasMessageContaining("ubicación");
+        assertThatThrownBy(() -> servicio.crearReporte(dto("Poste caído", "Poste inclinado sobre la vereda", null, -77.0, "Lima"))).hasMessageContaining("latitud");
     }
 
     @Test
     @DisplayName("Sin direccion se guardan las coordenadas como direccion")
     void direccionPorDefecto() {
-        servicio.crearReporte(dto("Poste", "Desc", -12.1, -77.0, "  "));
+        servicio.crearReporte(dto("Poste caído", "Poste inclinado sobre la vereda", -12.1, -77.0, "  "));
         ArgumentCaptor<Ubicacion> u = ArgumentCaptor.forClass(Ubicacion.class);
         verify(ubicaciones).save(u.capture());
         assertThat(u.getValue().getDireccion()).isEqualTo("Ubicación -12.10000, -77.00000");

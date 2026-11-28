@@ -15,6 +15,9 @@ class TabsController extends GetxController {
 class MainTabs extends StatelessWidget {
   const MainTabs({super.key});
 
+  /// Posición de la pestaña Reportar en el IndexedStack.
+  static const int indiceReportar = 2;
+
   @override
   Widget build(BuildContext context) {
     final c = Get.put(TabsController());

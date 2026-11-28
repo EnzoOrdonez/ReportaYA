@@ -53,9 +53,17 @@ def test_e2e01_registro_y_primer_ingreso(p):
                             ("Teléfono", "987654321"), ("Correo", f"{DATOS['usuario']}@prueba.pe"),
                             ("Usuario", DATOS["usuario"]), ("Contraseña", DATOS["clave"])]:
         escribir(pg, etiqueta, valor)
+
+    def enviar_registro():
+        n = [x for x in nodos(pg) if (x["label"] or x["text"]) == "Registrarse" and x["role"] == "button"]
+        clic_nodo(pg, n[-1])
+
+    # RF-21 / HU-20: sin aceptar el aviso de privacidad no se crea la cuenta.
+    enviar_registro()
+    esperar_texto(pg, "Debes aceptar el aviso de privacidad", 10)
+    clic(pg, "Acepto el aviso de privacidad")
     foto(pg, CAP / "02_registro.png")
-    n = [x for x in nodos(pg) if (x["label"] or x["text"]) == "Registrarse" and x["role"] == "button"]
-    clic_nodo(pg, n[-1])
+    enviar_registro()
     esperar_texto(pg, "Iniciar Sesión", 20)
     login(pg, DATOS["usuario"], DATOS["clave"])
     esperar_texto(pg, "Rosa Huaman", 30)
@@ -79,7 +87,10 @@ def test_e2e03_ciudadano_reporta(p):
     login(pg, DATOS["usuario"], DATOS["clave"])
     esperar_texto(pg, "Reportar Incidencia", 30)
     clic(pg, "Reportar")
-    esperar_texto(pg, "Enviar reporte")
+    # RF-20 / HU-19: aviso de simulación académica al abrir Crear reporte.
+    esperar_texto(pg, "simulación académica", 20)
+    # RF-04 / HU-17: este navegador niega la ubicación; la app lo dice y permite marcar a mano.
+    esperar_texto(pg, "el mapa para marcar el punto", 20, exacto=False)
     escribir(pg, "Ej. Hueco en la pista", DATOS["titulo"])
     clic(pg, "Alumbrado")
     escribir(pg, "Describe la incidencia", "El poste de la esquina del parque está apagado desde hace tres noches.")
@@ -88,15 +99,19 @@ def test_e2e03_ciudadano_reporta(p):
     # Con Nominatim disponible aparece la direccion ("Lima, Lima"); si el servicio publico
     # limita las consultas, la app muestra las coordenadas y el reporte se puede enviar igual.
     fin = time.time() + 30
-    while time.time() < fin and not (buscar(pg, "Lima", exacto=False) or buscar(pg, "Ubicacion seleccionada", exacto=False)):
+    while time.time() < fin and not (buscar(pg, "Lima", exacto=False) or buscar(pg, "Ubicación seleccionada", exacto=False)):
         pg.wait_for_timeout(400)
-    assert buscar(pg, "Lima", exacto=False) or buscar(pg, "Ubicacion seleccionada", exacto=False), "El punto marcado no muestra direccion ni coordenadas"
+    assert buscar(pg, "Lima", exacto=False) or buscar(pg, "Ubicación seleccionada", exacto=False), "El punto marcado no muestra direccion ni coordenadas"
     clic(pg, "Enviar reporte")
     esperar_texto(pg, "Adjunta al menos una foto", 10)
     agregar_foto_demo(pg)
     pg.wait_for_timeout(800)
     foto(pg, CAP / "05_reportar.png")
     clic(pg, "Enviar reporte")
+    # HU-03 CA1: resumen antes de confirmar el envío.
+    esperar_texto(pg, "¿Enviar este reporte?", 10)
+    foto(pg, CAP / "05b_confirmar_envio.png")
+    clic(pg, "Confirmar envío")
     esperar_texto(pg, "Mis Reportes", 30)
     esperar_texto(pg, DATOS["titulo"], 30)
     foto(pg, CAP / "06_mis_reportes.png", avisos=True)
@@ -210,4 +225,82 @@ def test_e2e08_operador_rechaza_con_motivo(p):
     esperar_texto(pg, "COLA DE REPORTES", 20)
     d = requests.get(f"{api}/reportes/{rid}", headers={"Authorization": f"Bearer {tok}"}, timeout=30).json()
     assert d["estado"] == "RECHAZADO" and d["comentarioResolucion"].startswith("Duplicado")
+    nav.close()
+
+
+def test_e2e09_gps_al_crear_reporte(p):
+    """RF-04 / HU-03: con permiso, la app ubica el reporte con el GPS sin tocar el mapa."""
+    import requests
+    api = os.environ.get("REPORTAYA_API", "http://127.0.0.1:8081/api")
+    punto = {"latitude": -12.0853, "longitude": -77.0376, "accuracy": 15}
+    nav, pg = nueva(p, permissions=["geolocation"], geolocation=punto)
+    login(pg, DATOS["usuario"], DATOS["clave"])
+    esperar_texto(pg, "Reportar Incidencia", 30)
+    clic(pg, "Reportar")
+    fin = time.time() + 40
+    while time.time() < fin and not (buscar(pg, "Lima", exacto=False) or buscar(pg, "Ubicación seleccionada", exacto=False)):
+        pg.wait_for_timeout(400)
+    assert buscar(pg, "Lima", exacto=False) or buscar(pg, "Ubicación seleccionada", exacto=False), "El GPS no marcó el punto"
+    titulo = f"Vereda rota GPS {S.upper()}"
+    escribir(pg, "Ej. Hueco en la pista", titulo)
+    clic(pg, "Infraestructura")
+    escribir(pg, "Describe la incidencia", "Losa de la vereda partida frente al paradero, riesgo de tropiezo.")
+    escribir(pg, "Referencia (opcional)", "Frente al paradero")
+    agregar_foto_demo(pg)
+    pg.wait_for_timeout(800)
+    foto(pg, CAP / "18_reporte_gps.png")
+    clic(pg, "Enviar reporte")
+    esperar_texto(pg, "¿Enviar este reporte?", 10)
+    assert buscar(pg, "Referencia: Frente al paradero", exacto=False)
+    clic(pg, "Confirmar envío")
+    esperar_texto(pg, "Mis Reportes", 30)
+    tok = requests.post(f"{api}/auth/login", json={"usuario": DATOS["usuario"], "password": DATOS["clave"]}, timeout=30).json()
+    lista = requests.get(f"{api}/reportes/cuenta/{tok['cuentaId'] if 'cuentaId' in tok else tok['id']}?page=0",
+                         headers={"Authorization": f"Bearer {tok['token']}"}, timeout=30).json()["content"]
+    r = next(x for x in lista if x["titulo"] == titulo)
+    u = r["ubicacion"]
+    assert abs(u["latitud"] - punto["latitude"]) < 1e-4 and abs(u["longitud"] - punto["longitude"]) < 1e-4
+    assert "Referencia: Frente al paradero" in (u.get("direccion") or "")
+    nav.close()
+
+
+def test_e2e10_aviso_privacidad_y_version(p):
+    """RF-21 / HU-20: el aviso se puede consultar despues del registro, desde el login."""
+    nav, pg = nueva(p)
+    assert buscar(pg, "ReportaYA 1.1.4", exacto=False)
+    assert not buscar(pg, "Servidor:", exacto=False), "El selector de servidor no debe verse en la version publicada"
+    clic(pg, "Aviso de privacidad")
+    esperar_texto(pg, "Qué datos se recogen", 20)
+    foto(pg, CAP / "19_aviso_privacidad.png")
+    for _ in range(8):  # el correo de contacto esta al final de la lista
+        if buscar(pg, "20221789@aloe.ulima.edu.pe", exacto=False):
+            break
+        desplazar(pg, 400)
+    assert buscar(pg, "20221789@aloe.ulima.edu.pe", exacto=False)
+    nav.close()
+
+
+def test_e2e11_enlace_de_recuperacion(p):
+    """RF-03 / HU-05: el enlace del correo abre la app con el codigo puesto y cambia la clave."""
+    import requests, subprocess
+    api = os.environ.get("REPORTAYA_API", "http://127.0.0.1:8081/api")
+    correo = f"{DATOS['usuario']}@prueba.pe"
+    assert requests.post(f"{api}/auth/recuperar-password", json={"correo": correo}, timeout=30).status_code == 200
+    cod = subprocess.run(["psql", "-h", "127.0.0.1", "-p", "5433", "-U", "postgres", "-d", "reportaya", "-At", "-c",
+                          f"select c.token_recuperacion from cuentas c join personas p on p.id=c.persona_id where p.correo='{correo}'"],
+                         capture_output=True, text=True, check=True).stdout.strip()
+    assert len(cod) == 6
+    # Mismo formato que arma ResendEmailServiceImpl: #/reset-password?correo=...&codigo=...
+    from urllib.parse import quote
+    nav, pg = nueva(p, ruta=f"#/reset-password?correo={quote(correo)}&codigo={cod}", esperar="Crea tu nueva contraseña")
+    assert buscar(pg, "tomado del enlace", exacto=False)
+    nueva_clave = "NuevaClave2026"
+    escribir(pg, "Mínimo 8 caracteres", nueva_clave)
+    escribir(pg, "Repite la nueva contraseña", nueva_clave)
+    foto(pg, CAP / "20_enlace_recuperacion.png")
+    clic(pg, "Confirmar")
+    esperar_texto(pg, "Iniciar Sesión", 30)
+    r = requests.post(f"{api}/auth/login", json={"usuario": DATOS["usuario"], "password": nueva_clave}, timeout=30)
+    assert r.status_code == 200
+    DATOS["clave"] = nueva_clave
     nav.close()

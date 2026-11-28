@@ -7,15 +7,15 @@ class AppToast {
     IconData icon;
     switch (type) {
       case 'success':
-        bg = const Color(0xFF4CAF50);
+        bg = const Color(0xFF2E7D32);
         icon = Icons.check_circle;
         break;
       case 'error':
-        bg = const Color(0xFFF44336);
+        bg = const Color(0xFFC62828);
         icon = Icons.error;
         break;
       default:
-        bg = const Color(0xFF2196F3);
+        bg = const Color(0xFF1565C0);
         icon = Icons.info;
     }
 

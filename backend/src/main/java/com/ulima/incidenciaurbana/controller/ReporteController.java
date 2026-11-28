@@ -150,7 +150,7 @@ public class ReporteController {
         try {
             tipo = TipoFoto.valueOf(tipoStr.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Tipo de foto invalido. Use INICIAL o FINAL"));
+            return ResponseEntity.badRequest().body(Map.of("error", "Tipo de foto inválido. Use INICIAL o FINAL"));
         }
 
         ReporteDTO reporte;
@@ -171,7 +171,7 @@ public class ReporteController {
                 : reporte.getFotos().stream().filter(f -> f.getTipo() == tipo).count();
         if (fotosDelTipo >= MAX_FOTOS_POR_TIPO) {
             return ResponseEntity.badRequest().body(Map.of("error",
-                    "El reporte ya tiene " + MAX_FOTOS_POR_TIPO + " fotos " + tipo + "; no se pueden agregar mas."));
+                    "El reporte ya tiene " + MAX_FOTOS_POR_TIPO + " fotos " + tipo + "; no se pueden agregar más."));
         }
 
         try {

@@ -35,7 +35,7 @@ public final class RequestAuth {
         for (String r : roles) {
             if (r.equals(actual)) return;
         }
-        throw new ForbiddenException("No tienes permiso para realizar esta accion.");
+        throw new ForbiddenException("No tienes permiso para realizar esta acción.");
     }
 
     /** true si el usuario autenticado tiene ese rol. */

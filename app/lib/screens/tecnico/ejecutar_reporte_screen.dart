@@ -90,6 +90,10 @@ class _EjecutarReporteScreenState extends State<EjecutarReporteScreen>
           bottom: TabBar(
             controller: _tabs,
             indicatorColor: Colors.white,
+            // Sin estos colores Material 3 usa el violeta primario, que no se
+            // lee sobre el verde de la cabecera.
+            labelColor: Colors.white,
+            unselectedLabelColor: const Color(0xFFE8F5E9),
             tabs: const [
               Tab(text: 'Información'),
               Tab(text: 'Evidencia'),
@@ -241,7 +245,7 @@ class _EjecutarReporteScreenState extends State<EjecutarReporteScreen>
           ),
         ] else ...[
           const InfoCallout(
-            'Registra la evidencia de la solución y finaliza el reporte. El ciudadano será notificado.',
+            'Registra la evidencia de la solución y finaliza el reporte. El ciudadano verá la evidencia en el detalle de su reporte.',
             color: AppColors.tecnicoPrimary,
             bg: Color(0xFFEAFAF0),
             fg: Color(0xFF2C7A4F),

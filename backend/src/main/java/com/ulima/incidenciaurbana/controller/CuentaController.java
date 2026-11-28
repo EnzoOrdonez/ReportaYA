@@ -46,7 +46,7 @@ public class CuentaController {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
                     .body(paginaHtml("Cuenta verificada",
-                            "Tu cuenta fue verificada con exito. Ya puedes iniciar sesion en ReportaYA.",
+                            "Tu cuenta fue verificada con éxito. Ya puedes iniciar sesión en ReportaYA.",
                             true));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -60,7 +60,7 @@ public class CuentaController {
         try {
             cuentaService.reenviarVerificacion(body.get("correo"));
             return ResponseEntity.ok(Map.of(
-                    "message", "Si el correo existe y aun no esta verificado, te reenviamos el enlace."));
+                    "message", "Si el correo existe y aún no está verificado, te reenviamos el enlace."));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", ApiErrores.mensaje(e)));
         }

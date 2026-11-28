@@ -17,6 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ReporteServiceImpl implements IReporteService {
 
+    public static final int TITULO_MIN = 5;
+    public static final int TITULO_MAX = 100;
+    public static final int DESCRIPCION_MIN = 20;
+    public static final int DESCRIPCION_MAX = 1000;
+
+
     private final ReporteRepository reporteRepository;
     private final CuentaRepository cuentaRepository;
     private final TecnicoRepository tecnicoRepository;
@@ -49,9 +55,9 @@ public class ReporteServiceImpl implements IReporteService {
     public ReporteDTO crearReporte(ReporteDTO reporteDTO) {
         validarTextos(reporteDTO);
         if (reporteDTO.getUbicacion() == null)
-            throw new RuntimeException("La ubicacion es obligatoria para crear un reporte");
+            throw new RuntimeException("La ubicación es obligatoria para crear un reporte");
         if (reporteDTO.getUbicacion().getLatitud() == null || reporteDTO.getUbicacion().getLongitud() == null)
-            throw new RuntimeException("La latitud y longitud son obligatorias en la ubicacion");
+            throw new RuntimeException("La latitud y longitud son obligatorias en la ubicación");
         if (reporteDTO.getCuentaId() == null)
             throw new RuntimeException("El ID de la cuenta es obligatorio");
 
@@ -95,9 +101,9 @@ public class ReporteServiceImpl implements IReporteService {
         }
 
         if (reporteDTO.getUbicacion() == null)
-            throw new RuntimeException("La ubicacion es obligatoria");
+            throw new RuntimeException("La ubicación es obligatoria");
         if (reporteDTO.getUbicacion().getLatitud() == null || reporteDTO.getUbicacion().getLongitud() == null)
-            throw new RuntimeException("La latitud y longitud son obligatorias en la ubicacion");
+            throw new RuntimeException("La latitud y longitud son obligatorias en la ubicación");
 
         Ubicacion ubicacion = reporte.getUbicacion();
         ubicacion.setLatitud(reporteDTO.getUbicacion().getLatitud());
@@ -165,19 +171,19 @@ public class ReporteServiceImpl implements IReporteService {
 
         if (reporte.getEstado() != EstadoReporte.REVISION) {
             throw new RuntimeException(
-                    "El reporte debe estar en estado REVISION para asignar tecnico. Estado actual: "
+                    "El reporte debe estar en estado REVISION para asignar técnico. Estado actual: "
                             + reporte.getEstado());
         }
 
         Tecnico tecnico = tecnicoRepository.findById(tecnicoId)
-                .orElseThrow(() -> new RuntimeException("Tecnico no encontrado con id: " + tecnicoId));
+                .orElseThrow(() -> new RuntimeException("Técnico no encontrado con id: " + tecnicoId));
 
         reporte.setTecnico(tecnico);
         reporte = reporteRepository.save(reporte);
 
         notificationService.enviarNotificacion(reporte.getCuenta().getId(),
-                "Tecnico Asignado",
-                "Se ha asignado un tecnico a tu reporte '" + reporte.getTitulo() + "'");
+                "Técnico asignado",
+                "Se ha asignado un técnico a tu reporte '" + reporte.getTitulo() + "'");
 
         return queryService.convertirADTO(reporte);
     }
@@ -208,12 +214,12 @@ public class ReporteServiceImpl implements IReporteService {
      */
     private void validarTransicion(EstadoReporte actual, EstadoReporte nuevo) {
         if (nuevo == EstadoReporte.RECHAZADO) {
-            throw new RuntimeException("Para rechazar un reporte usa la accion Rechazar (requiere motivo)");
+            throw new RuntimeException("Para rechazar un reporte usa la acción Rechazar (requiere motivo)");
         }
         boolean ok = (actual == EstadoReporte.PENDIENTE && nuevo == EstadoReporte.REVISION)
                 || (actual == EstadoReporte.REVISION && nuevo == EstadoReporte.FINALIZADO);
         if (!ok) {
-            throw new RuntimeException("Transicion no permitida: " + actual + " -> " + nuevo);
+            throw new RuntimeException("Transición no permitida: " + actual + " -> " + nuevo);
         }
     }
 
@@ -221,10 +227,13 @@ public class ReporteServiceImpl implements IReporteService {
     private void validarTextos(ReporteDTO dto) {
         String titulo = dto.getTitulo() == null ? "" : dto.getTitulo().trim();
         String descripcion = dto.getDescripcion() == null ? "" : dto.getDescripcion().trim();
-        if (titulo.isEmpty()) throw new RuntimeException("El titulo es obligatorio");
-        if (descripcion.isEmpty()) throw new RuntimeException("La descripcion es obligatoria");
-        if (titulo.length() > 255) throw new RuntimeException("El titulo no puede superar 255 caracteres");
-        if (descripcion.length() > 1000) throw new RuntimeException("La descripcion no puede superar 1000 caracteres");
+        // HU-03 CA1: título de 5 a 100 caracteres y descripción de 20 a 1000.
+        if (titulo.isEmpty()) throw new RuntimeException("El título es obligatorio");
+        if (descripcion.isEmpty()) throw new RuntimeException("La descripción es obligatoria");
+        if (titulo.length() < TITULO_MIN || titulo.length() > TITULO_MAX)
+            throw new RuntimeException("El título debe tener entre " + TITULO_MIN + " y " + TITULO_MAX + " caracteres");
+        if (descripcion.length() < DESCRIPCION_MIN || descripcion.length() > DESCRIPCION_MAX)
+            throw new RuntimeException("La descripción debe tener entre " + DESCRIPCION_MIN + " y " + DESCRIPCION_MAX + " caracteres");
         dto.setTitulo(titulo);
         dto.setDescripcion(descripcion);
     }

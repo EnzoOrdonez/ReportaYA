@@ -1,6 +1,7 @@
 """Pruebas de humo del despliegue en la nube. Solo lectura: no crean ni modifican datos.
     REPORTAYA_URL=https://reportaya-api-mcg4.onrender.com REPORTAYA_WEB=https://enzoordonez.github.io/ReportaYA-App/ \
     REPORTAYA_VERSION=1.1.2 pytest pruebas/humo -v"""
+import random
 import os, time
 import requests
 
@@ -25,7 +26,7 @@ def test_h03_token_invalido_401():
 
 
 def test_h04_login_inexistente_401():
-    r = requests.post(f"{URL}/api/auth/login", json={"usuario": "humo_no_existe", "password": "no-es-clave"}, timeout=60)
+    r = requests.post(f"{URL}/api/auth/login", json={"usuario": f"humo_no_existe_{random.randint(10**5, 10**6)}", "password": "no-es-clave"}, timeout=60)
     assert r.status_code == 401 and "error" in r.json()
 
 

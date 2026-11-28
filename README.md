@@ -2,7 +2,7 @@
 
 Sistema para reportar incidencias urbanas (huecos, alumbrado, residuos, seguridad) y seguir su atención municipal. Incluye una app en Flutter para tres roles (ciudadano, operador municipal y técnico de campo) y una API REST en Spring Boot con PostgreSQL.
 
-Proyecto del curso Proyecto de Desarrollo de Software, Universidad de Lima, ciclo 2026-2. Versión 1.1.2.
+Proyecto del curso Proyecto de Desarrollo de Software, Universidad de Lima, ciclo 2026-2. Versión 1.1.4.
 
 ## En funcionamiento
 
@@ -28,6 +28,15 @@ Cliente y servidor en capas. La app separa pantallas, controladores GetX (estado
 
 Ciclo de un reporte: `PENDIENTE -> REVISION -> FINALIZADO`, o `PENDIENTE/REVISION -> RECHAZADO` con motivo. Cada cambio queda en `historial_estados`.
 
+## Novedades de la 1.1.4
+
+- Ubicación del equipo al crear un reporte (una vez, en primer plano y con permiso) y botón *Mi ubicación*; si se niega, se marca en el mapa (RF-04, RF-05).
+- Aviso de alcance con los números 105, 116 y 106 (RF-20) y aviso de privacidad con aceptación registrada en la API (RF-21).
+- Resumen antes de enviar, referencia opcional del lugar y fotos JPG o PNG de hasta 2 MB (HU-03, RNF-01).
+- Recuperación con enlace al formulario web y código ligado al correo; 5 solicitudes por hora (HU-05).
+- Bloqueo de 5 minutos tras 5 claves incorrectas y revocación del token al cerrar sesión o cambiar la contraseña (HU-02).
+- Validaciones de HU-01 y HU-03: contraseña de 8 caracteres, nombres de 2 a 100, título de 5 a 100 y descripción de 20 a 1000.
+
 ## Ejecutar en local
 
 Backend (Java 17 y PostgreSQL):
@@ -50,16 +59,18 @@ flutter pub get
 flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8081/api
 ```
 
+Las fotos de demostración del selector solo aparecen si se compila con `--dart-define=FOTOS_DEMO=true` (lo usan las pruebas E2E); la versión publicada exige una foto real.
+
 Cuentas de prueba de `db/llenar-TABLAS.sql`: `ciudadano`, `op.maria` (operador) y `tec.carlos` (técnico). En producción esas cuentas usan otras claves.
 
 ## Pruebas
 
-| Nivel | Herramienta | Resultado (v1.1.2) |
+| Nivel | Herramienta | Resultado (v1.1.4) |
 |---|---|---|
-| Unitarias e integración del backend | JUnit 5, Mockito, MockMvc, H2 | 38 de 38 |
-| Unitarias y de widgets de la app (incluye accesibilidad) | flutter_test | 31 de 31 |
-| Sistema, caja negra sobre la API | pytest + requests | 59 de 59 |
-| Extremo a extremo sobre la web | Playwright | 8 de 8 |
+| Unitarias e integración del backend | JUnit 5, Mockito, MockMvc, H2 | 48 de 48 |
+| Unitarias y de widgets de la app (incluye accesibilidad) | flutter_test | 46 de 46 |
+| Sistema, caja negra sobre la API | pytest + requests | 66 de 66 |
+| Extremo a extremo sobre la web | Playwright | 11 de 11 |
 | Carga (50 usuarios, 60 s) | httpx asíncrono | p95 de 694 ms, 0 errores |
 | Humo en producción (solo lectura) | pytest | 10 de 10 |
 
@@ -71,4 +82,4 @@ Este repositorio no contiene claves ni credenciales: la llave de firma de Androi
 
 ## Créditos
 
-La aplicación nace de los repositorios del equipo: [jeffangeloss/ReportaYA-Front](https://github.com/jeffangeloss/ReportaYA-Front) y [Yotzuga/ReportaYA-Backend](https://github.com/Yotzuga/ReportaYA-Backend), con aportes de Mariel Casolda, Enzo Ordoñez, Jefferson Sánchez y Anthony Yance. Esta versión agrega las correcciones de seguridad, el despliegue en la nube, la campaña de pruebas y las mejoras de accesibilidad de la 1.1.x.
+La aplicación nace de los repositorios del equipo: [jeffangeloss/ReportaYA-Front](https://github.com/jeffangeloss/ReportaYA-Front) y [Yotzuga/ReportaYA-Backend](https://github.com/Yotzuga/ReportaYA-Backend), con aportes de Mariel Casolda, Enzo Ordoñez, Jefferson Sánchez y Anthony Yance. Esta versión agrega las correcciones de seguridad, el despliegue en la nube, la campaña de pruebas, las mejoras de accesibilidad y las funciones de la 1.1.x.

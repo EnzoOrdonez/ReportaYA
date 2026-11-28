@@ -36,7 +36,7 @@ class _GestionReportesScreenState extends State<GestionReportesScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'Indica el motivo. Se notificara al ciudadano.',
+              'Indica el motivo. El ciudadano lo verá en el detalle de su reporte.',
               style: TextStyle(fontSize: 13),
             ),
             const SizedBox(height: 10),

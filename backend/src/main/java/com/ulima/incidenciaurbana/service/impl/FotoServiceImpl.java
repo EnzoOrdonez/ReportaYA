@@ -55,10 +55,10 @@ public class FotoServiceImpl implements IFotoService {
         try {
             decodedBytes = Base64.getDecoder().decode(base64Limpio.replaceAll("\\s", ""));
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("La foto no es un base64 valido");
+            throw new RuntimeException("La foto no es un base64 válido");
         }
-        if (decodedBytes.length == 0) throw new RuntimeException("La foto esta vacia");
-        if (decodedBytes.length > MAX_BYTES) throw new RuntimeException("La foto supera el maximo de 5 MB");
+        if (decodedBytes.length == 0) throw new RuntimeException("La foto está vacía");
+        if (decodedBytes.length > MAX_BYTES) throw new RuntimeException("La foto supera el máximo de 5 MB");
 
         String extension = determinarExtension(decodedBytes);
         String clave = UUID.randomUUID().toString();

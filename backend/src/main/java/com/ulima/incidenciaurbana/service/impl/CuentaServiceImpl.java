@@ -18,6 +18,9 @@ import java.util.UUID;
 @Transactional
 public class CuentaServiceImpl implements ICuentaService {
 
+    /** Versión vigente del aviso de privacidad que muestra la app (RF-21). */
+    public static final String VERSION_AVISO_PRIVACIDAD = "2026-11-27";
+
     /** Horas de validez del enlace de verificación de correo. */
     private static final int HORAS_VALIDEZ_TOKEN = 24;
 
@@ -51,12 +54,17 @@ public class CuentaServiceImpl implements ICuentaService {
         String tipo = (dto.getTipoCuenta() == null) ? "" : dto.getTipoCuenta().toUpperCase();
         if (!"CIUDADANO".equals(tipo)) {
             throw new IllegalArgumentException(
-                    "El registro publico solo permite crear cuentas de tipo CIUDADANO");
+                    "El registro público solo permite crear cuentas de tipo CIUDADANO");
+        }
+
+        // RF-21: sin aceptar el aviso de privacidad no se crea la cuenta.
+        if (!Boolean.TRUE.equals(dto.getAceptaPrivacidad())) {
+            throw new IllegalArgumentException("Debes aceptar el aviso de privacidad para registrarte.");
         }
 
         // Duplicados: mensaje claro en vez del error SQL de la restriccion UNIQUE.
         if (dto.getUsuario() != null && cuentaRepository.existsByUsuarioIgnoreCase(dto.getUsuario().trim())) {
-            throw new IllegalArgumentException("El usuario ya esta en uso. Elige otro.");
+            throw new IllegalArgumentException("El usuario ya está en uso. Elige otro.");
         }
         if (dto.getDni() != null && cuentaRepository.existsByPersonaDni(dto.getDni().trim())) {
             throw new IllegalArgumentException("Ya existe una cuenta con ese DNI.");
@@ -71,6 +79,7 @@ public class CuentaServiceImpl implements ICuentaService {
 
         String hashedPassword = passwordEncoder.encode(dto.getContrasena());
         Cuenta cuenta = new Ciudadano(dto.getUsuario(), hashedPassword, persona);
+        cuenta.aceptarAvisoPrivacidad(VERSION_AVISO_PRIVACIDAD);
 
         Cuenta guardada;
         if (verificarCorreo) {
@@ -112,11 +121,11 @@ public class CuentaServiceImpl implements ICuentaService {
 
         Cuenta cuenta = cuentaRepository.findByTokenVerificacion(token)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Enlace de verificacion invalido o ya utilizado"));
+                        "Enlace de verificación inválido o ya utilizado"));
 
         if (cuenta.tokenVerificacionExpirado()) {
             throw new IllegalArgumentException(
-                    "El enlace de verificacion ha expirado. Solicita uno nuevo.");
+                    "El enlace de verificación ha expirado. Solicita uno nuevo.");
         }
 
         cuenta.confirmarVerificacion();

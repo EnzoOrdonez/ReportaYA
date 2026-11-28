@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.HtmlUtils;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,7 @@ public class ResendEmailServiceImpl implements IEmailService {
     private final String brevoSenderName;
     private final String brevoUrl;
     private final String baseUrl;
+    private final String webUrl;
     private final RestClient restClient;
 
     public ResendEmailServiceImpl(
@@ -52,7 +55,9 @@ public class ResendEmailServiceImpl implements IEmailService {
             @Value("${brevo.api-key:}") String brevoApiKey,
             @Value("${brevo.sender-email:}") String brevoSenderEmail,
             @Value("${brevo.sender-name:ReportaYA}") String brevoSenderName,
-            @Value("${brevo.api-url:https://api.brevo.com/v3/smtp/email}") String brevoUrl) {
+            @Value("${brevo.api-url:https://api.brevo.com/v3/smtp/email}") String brevoUrl,
+            @Value("${app.web-url:https://enzoordonez.github.io/ReportaYA-App/}") String webUrl) {
+        this.webUrl = webUrl.endsWith("/") ? webUrl : webUrl + "/";
         this.apiKey = apiKey;
         this.from = from;
         this.brevoApiKey = brevoApiKey == null ? "" : brevoApiKey.trim();
@@ -91,11 +96,15 @@ public class ResendEmailServiceImpl implements IEmailService {
         // No se envia enlace (no hay deep link configurado); el codigo va en el correo.
         // Si no hay RESEND_API_KEY (modo local), enviarCorreo deja el codigo en el log.
         // Con API key no se registra: quien lea los logs no debe poder cambiar contrasenas.
+        // RF-03: enlace de un solo uso (30 min) que abre la app web con el código ya
+        // escrito. Los datos van tras el "#", que el navegador no envía a ningún servidor.
+        String enlace = webUrl + "#/reset-password?correo="
+                + URLEncoder.encode(correo, StandardCharsets.UTF_8) + "&codigo=" + token;
         enviarCorreo(
                 correo,
-                "Tu codigo para restablecer la contrasena de ReportaYA",
-                construirHtmlRecuperacion(nombre, token),
-                construirTextoRecuperacion(nombre, token),
+                "Tu código de ReportaYA: " + token,
+                construirHtmlRecuperacion(nombre, token, enlace),
+                construirTextoRecuperacion(nombre, token, enlace),
                 token,
                 "recuperacion de contrasena");
     }
@@ -128,15 +137,13 @@ public class ResendEmailServiceImpl implements IEmailService {
                     .toBodilessEntity();
             log.info("[Resend] Correo de {} enviado a {}", tipo, correo);
         } catch (Exception e) {
-            log.error("[Resend] Error enviando correo de {} a {}: {}. Enlace: {}",
-                    tipo, correo, e.getMessage(), enlace);
+            log.error("[Resend] Error enviando correo de {} a {}: {}", tipo, correo, e.getMessage());
         }
     }
 
     private void enviarConBrevo(String correo, String subject, String html, String text, String enlace, String tipo) {
         if (brevoSenderEmail.isBlank()) {
-            log.error("[Brevo] Falta BREVO_SENDER_EMAIL (remitente verificado en Brevo). Enlace de {} para {}: {}",
-                    tipo, correo, enlace);
+            log.error("[Brevo] Falta BREVO_SENDER_EMAIL (remitente verificado en Brevo); no se envió el correo de {} a {}", tipo, correo);
             return;
         }
         Map<String, Object> payload = Map.of(
@@ -157,8 +164,7 @@ public class ResendEmailServiceImpl implements IEmailService {
             log.info("[Brevo] Correo de {} enviado a {}", tipo, correo);
         } catch (Exception e) {
             // Si el envio falla, el codigo queda en el log para que un administrador ayude.
-            log.error("[Brevo] Error enviando correo de {} a {}: {}. Enlace: {}",
-                    tipo, correo, e.getMessage(), enlace);
+            log.error("[Brevo] Error enviando correo de {} a {}: {}", tipo, correo, e.getMessage());
         }
     }
 
@@ -180,20 +186,30 @@ public class ResendEmailServiceImpl implements IEmailService {
                 """.formatted(saludo, enlaceHtml, enlaceHtml);
     }
 
-    private String construirHtmlRecuperacion(String nombre, String codigo) {
-        String saludo = (nombre != null && !nombre.isBlank()) ? HtmlUtils.htmlEscape(nombre) : "";
+    private String construirHtmlRecuperacion(String nombre, String codigo, String enlace) {
+        String saludo = (nombre != null && !nombre.isBlank()) ? " " + HtmlUtils.htmlEscape(nombre) : "";
         String codigoHtml = HtmlUtils.htmlEscape(codigo);
+        String enlaceHtml = HtmlUtils.htmlEscape(enlace);
         return """
-                <div style="font-family: system-ui, sans-serif; max-width:480px; margin:0 auto; padding:24px; color:#18181b;">
-                  <h2 style="color:#7c3aed;">ReportaYA</h2>
-                  <p>Hola %s, recibimos una solicitud para restablecer tu contraseña.</p>
-                  <p>Ingresa este código en la app para crear tu nueva contraseña:</p>
-                  <p style="text-align:center; margin:32px 0;">
-                    <span style="display:inline-block; background:#f4f4f5; color:#7c3aed; font-size:32px; font-weight:700; letter-spacing:8px; padding:16px 28px; border-radius:12px; font-family:monospace;">%s</span>
-                  </p>
-                  <p style="font-size:13px; color:#71717a;">Este código caduca en 30 minutos. Si no solicitaste este cambio, ignora este correo.</p>
+                <div style="background:#f4f2fb; padding:24px 12px; font-family:Arial, Helvetica, sans-serif;">
+                  <div style="max-width:480px; margin:0 auto; background:#ffffff; border-radius:16px; overflow:hidden; color:#1f1f29;">
+                    <div style="background:#6d28d9; color:#ffffff; padding:20px 24px; font-size:22px; font-weight:700;">ReportaYA</div>
+                    <div style="padding:24px;">
+                      <p style="margin:0 0 12px; font-size:16px;">Hola%s,</p>
+                      <p style="margin:0 0 20px; font-size:15px; line-height:1.5;">Recibimos una solicitud para restablecer tu contraseña. Pulsa el botón para crear una nueva desde el navegador:</p>
+                      <p style="text-align:center; margin:0 0 24px;">
+                        <a href="%s" style="display:inline-block; background:#6d28d9; color:#ffffff; text-decoration:none; font-weight:700; font-size:16px; padding:14px 28px; border-radius:10px;">Restablecer contraseña</a>
+                      </p>
+                      <p style="margin:0 0 8px; font-size:14px; color:#4b5563;">¿Prefieres usar la app? Escribe o pega este código en la pantalla de verificación:</p>
+                      <p style="text-align:center; margin:0 0 20px;">
+                        <span style="display:inline-block; background:#f4f2fb; color:#4c1d95; font-size:32px; font-weight:700; letter-spacing:8px; padding:14px 24px; border-radius:12px; font-family:'Courier New', monospace; user-select:all;">%s</span>
+                      </p>
+                      <p style="margin:0; font-size:13px; color:#6b7280; line-height:1.5;">El enlace y el código sirven una sola vez y caducan en 30 minutos. Al cambiar la contraseña se cierran tus sesiones abiertas. Si no pediste este cambio, ignora este correo: tu contraseña sigue igual.</p>
+                    </div>
+                    <div style="padding:14px 24px; background:#faf9fe; font-size:12px; color:#6b7280;">ReportaYA, proyecto académico de la Universidad de Lima.</div>
+                  </div>
                 </div>
-                """.formatted(saludo, codigoHtml);
+                """.formatted(saludo, enlaceHtml, codigoHtml);
     }
 
     private String construirTextoVerificacion(String nombre, String enlace) {
@@ -210,20 +226,24 @@ public class ResendEmailServiceImpl implements IEmailService {
                 """.formatted(saludo, enlace);
     }
 
-    private String construirTextoRecuperacion(String nombre, String codigo) {
+    private String construirTextoRecuperacion(String nombre, String codigo, String enlace) {
         String saludo = construirSaludoTexto(nombre);
         return """
                 Hola%s,
 
-                Recibimos una solicitud para restablecer tu contrasena de ReportaYA.
-                Ingresa este codigo en la app para crear tu nueva contrasena:
+                Recibimos una solicitud para restablecer tu contraseña de ReportaYA.
 
+                Abre este enlace para crear una nueva contraseña:
                 %s
 
-                Este codigo caduca en 30 minutos. Si no solicitaste este cambio, ignora este correo.
+                O escribe este código en la app: %s
 
-                Equipo de ReportaYA
-                """.formatted(saludo, codigo);
+                El enlace y el código sirven una sola vez y caducan en 30 minutos.
+                Al cambiar la contraseña se cierran tus sesiones abiertas.
+                Si no pediste este cambio, ignora este correo.
+
+                ReportaYA, proyecto académico de la Universidad de Lima
+                """.formatted(saludo, enlace, codigo);
     }
 
     private String construirSaludoTexto(String nombre) {

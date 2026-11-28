@@ -8,6 +8,8 @@ import 'package:get_storage/get_storage.dart';
 import 'package:reportaya/controllers/auth_controller.dart';
 import 'package:reportaya/screens/auth/login_screen.dart';
 import 'package:reportaya/screens/auth/register_screen.dart';
+import 'package:reportaya/screens/legal/aviso_privacidad_screen.dart';
+import 'package:reportaya/widgets/aviso_alcance.dart';
 import 'package:reportaya/services/despertador.dart';
 import 'package:reportaya/widgets/foto_picker.dart';
 
@@ -83,13 +85,26 @@ void main() {
       await t.enterText(campos.at(3), '98765');
       await t.enterText(campos.at(4), 'ana-sin-arroba');
       await t.enterText(campos.at(5), 'ana');
-      await t.enterText(campos.at(6), '12345');
+      await t.enterText(campos.at(6), '1234567');
       await t.tap(find.widgetWithText(ElevatedButton, 'Registrarse'));
       await t.pump();
       expect(find.text('Debe tener 8 dígitos numéricos'), findsOneWidget);
       expect(find.text('Debe tener 9 dígitos numéricos'), findsOneWidget);
       expect(find.text('Correo inválido'), findsOneWidget);
-      expect(find.text('Mínimo 6 caracteres'), findsOneWidget);
+      expect(find.text('Mínimo 8 caracteres'), findsOneWidget);
+      expect(
+        find.text('Debes aceptar el aviso de privacidad para continuar'),
+        findsOneWidget,
+      );
+      // Al marcar la casilla el mensaje desaparece.
+      await t.ensureVisible(find.byType(Checkbox));
+      await t.tap(find.byType(Checkbox));
+      await t.pump();
+      await t.pump();
+      expect(
+        find.text('Debes aceptar el aviso de privacidad para continuar'),
+        findsNothing,
+      );
     },
   );
 
@@ -160,4 +175,48 @@ void main() {
       h.dispose();
     },
   );
+
+  testWidgets(
+    'Aviso de privacidad (RF-21) y de alcance (RF-20): contenido, area tactil y contraste',
+    (t) async {
+      final h = t.ensureSemantics();
+      await montar(
+        t,
+        const AvisoPrivacidadScreen(),
+        tam: const Size(360, 2400),
+      );
+      for (final titulo in [
+        'Qué datos se recogen',
+        'Para qué se usan',
+        'Quién puede verlos',
+        'Por cuánto tiempo',
+        'Tus derechos',
+      ]) {
+        expect(find.text(titulo), findsOneWidget);
+      }
+      expect(find.text('20221789@aloe.ulima.edu.pe'), findsOneWidget);
+      expect(find.textContaining('105 Policía'), findsOneWidget);
+      expect(find.textContaining('116 Bomberos'), findsOneWidget);
+      expect(find.textContaining('106 SAMU'), findsOneWidget);
+      await expectLater(t, meetsGuideline(labeledTapTargetGuideline));
+      await expectLater(t, meetsGuideline(androidTapTargetGuideline));
+      await expectLater(t, meetsGuideline(textContrastGuideline));
+      h.dispose();
+    },
+  );
+
+  for (final escala in [1.0, 2.0]) {
+    testWidgets(
+      'Aviso de alcance en 360 dp con texto al ${(escala * 100).round()} % sin desbordes',
+      (t) async {
+        await montar(
+          t,
+          const Scaffold(body: SingleChildScrollView(child: AvisoAlcance())),
+          escala: escala,
+        );
+        expect(t.takeException(), isNull);
+        expect(find.textContaining('simulación académica'), findsOneWidget);
+      },
+    );
+  }
 }

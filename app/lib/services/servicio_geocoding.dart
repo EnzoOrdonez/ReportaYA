@@ -68,7 +68,7 @@ class ServicioGeocoding {
       ciudad: 'Lima',
       departamento: 'Lima',
       pais: 'Peru',
-      direccionCompleta: 'Ubicacion seleccionada ($coord)',
+      direccionCompleta: 'Ubicación seleccionada ($coord)',
     );
   }
 

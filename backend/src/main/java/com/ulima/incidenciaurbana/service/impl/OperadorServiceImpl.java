@@ -38,7 +38,7 @@ public class OperadorServiceImpl implements IOperadorService {
             EstadoReporte estadoEnum = EstadoReporte.valueOf(estado.toUpperCase());
             return queryService.obtenerTodosReportes(Math.max(0, page), estadoEnum);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Estado invalido: " + estado);
+            throw new IllegalArgumentException("Estado inválido: " + estado);
         }
     }
 

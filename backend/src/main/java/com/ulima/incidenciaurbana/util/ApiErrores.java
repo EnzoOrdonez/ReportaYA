@@ -13,7 +13,7 @@ public final class ApiErrores {
 
     public static String mensaje(Exception e) {
         if (e instanceof DataAccessException) {
-            return "Los datos no son validos o ya existen. Revisa la informacion enviada.";
+            return "Los datos no son válidos o ya existen. Revisa la información enviada.";
         }
         String m = e.getMessage();
         return (m == null || m.isBlank()) ? "No se pudo procesar la solicitud." : m;

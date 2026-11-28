@@ -6,14 +6,16 @@ WEB = os.environ.get("REPORTAYA_WEB", "http://127.0.0.1:8080/")
 CHROME = os.environ.get("CHROME", "/usr/bin/google-chrome")
 
 
-def abrir(p, ancho=412, alto=915, escala=2):
+def abrir(p, ancho=412, alto=915, escala=2, ruta="", esperar="Iniciar Sesión", **ctx_kw):
+    """ctx_kw pasa opciones al contexto, por ejemplo permissions=["geolocation"] y
+    geolocation={...}. Sin permiso, Chromium rechaza la ubicación como un usuario que dice "No"."""
     proxy = os.environ.get("HTTPS_PROXY")
     nav = p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"],
                             proxy={"server": proxy, "bypass": "localhost,127.0.0.1"} if proxy else None)
-    ctx = nav.new_context(viewport={"width": ancho, "height": alto}, device_scale_factor=escala, locale="es-PE")
+    ctx = nav.new_context(viewport={"width": ancho, "height": alto}, device_scale_factor=escala, locale="es-PE", **ctx_kw)
     pg = ctx.new_page()
-    pg.goto(WEB, wait_until="networkidle")
-    esperar_texto(pg, "Iniciar Sesión", 60)
+    pg.goto(WEB + ruta, wait_until="networkidle")
+    esperar_texto(pg, esperar, 60)
     return nav, pg
 
 
@@ -94,6 +96,13 @@ def escribir(pg, etiqueta, valor):
         desplazar(pg, 300)
         n = buscar(pg, etiqueta, exacto=False, tag="INPUT") or buscar(pg, etiqueta, exacto=False, tag="TEXTAREA")
     assert n, f"No se encontro el campo: {etiqueta}"
+    # Si el campo quedo detras de la barra inferior, se desplaza antes de tocarlo.
+    alto = pg.viewport_size["height"]
+    for _ in range(4):
+        if n["y"] < alto - 140:
+            break
+        desplazar(pg, 250)
+        n = buscar(pg, etiqueta, exacto=False, tag="INPUT") or buscar(pg, etiqueta, exacto=False, tag="TEXTAREA") or n
     tocar(pg, n["x"], n["y"])
     pg.keyboard.press("Control+A")
     pg.keyboard.type(valor, delay=5)

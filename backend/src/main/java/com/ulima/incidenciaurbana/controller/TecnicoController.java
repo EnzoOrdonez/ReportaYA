@@ -77,7 +77,7 @@ public class TecnicoController {
         RequestAuth.requireRole(httpRequest, RequestAuth.TECNICO);
         Long actor = RequestAuth.cuentaId(httpRequest);
         if (actor == null || !actor.equals(id)) {
-            throw new ForbiddenException("Solo el tecnico asignado puede completar este reporte.");
+            throw new ForbiddenException("Solo el técnico asignado puede completar este reporte.");
         }
         try {
             ReporteDTO reporteDTO = tecnicoService.completarReporte(id, reporteId, request);

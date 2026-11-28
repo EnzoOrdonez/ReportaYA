@@ -18,7 +18,22 @@ import '../../widgets/app_colors.dart';
 const int kResetCodeLength = 6;
 
 /// Minimo de caracteres de la nueva contrasena (alineado al backend).
-const int kMinPasswordLength = 6;
+const int kMinPasswordLength = 8;
+
+/// Busca un código de [kResetCodeLength] caracteres en un texto pegado
+/// (por ejemplo "Tu código de ReportaYA: A3F9K2").
+String? extraerCodigoRecuperacion(String texto) {
+  final t = texto.trim().toUpperCase();
+  final exacto = RegExp('^[A-Z0-9]{$kResetCodeLength}\$');
+  if (exacto.hasMatch(t)) return t;
+  final candidatos = RegExp(
+    '(?<![A-Z0-9])[A-Z0-9]{$kResetCodeLength}(?![A-Z0-9])',
+  ).allMatches(t).map((x) => x.group(0)!).toList();
+  if (candidatos.isEmpty) return null;
+  // Se prefiere el que tiene dígitos: las palabras sueltas no los tienen.
+  final conDigito = candidatos.where((c) => RegExp('[0-9]').hasMatch(c));
+  return conDigito.isNotEmpty ? conDigito.last : candidatos.last;
+}
 
 /// Fuerza el texto a mayusculas: el backend genera el codigo en mayusculas
 /// (ej. "A3F9K2"), asi que lo normalizamos mientras el usuario escribe.
@@ -368,12 +383,14 @@ class PasswordResetCodeField extends StatefulWidget {
     required this.palette,
     this.length = kResetCodeLength,
     this.onCompleted,
+    this.autofocus = false,
   });
 
   final TextEditingController controller;
   final PasswordResetPalette palette;
   final int length;
   final ValueChanged<String>? onCompleted;
+  final bool autofocus;
 
   @override
   State<PasswordResetCodeField> createState() => _PasswordResetCodeFieldState();
@@ -451,7 +468,10 @@ class _PasswordResetCodeFieldState extends State<PasswordResetCodeField> {
           child: TextField(
             controller: widget.controller,
             focusNode: _focusNode,
-            keyboardType: TextInputType.text,
+            autofocus: widget.autofocus,
+            // Android e iOS ofrecen el código recibido (correo o SMS) sobre el teclado.
+            autofillHints: const [AutofillHints.oneTimeCode],
+            keyboardType: TextInputType.visiblePassword,
             textInputAction: TextInputAction.next,
             autocorrect: false,
             enableSuggestions: false,

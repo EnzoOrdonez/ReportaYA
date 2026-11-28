@@ -42,6 +42,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(com.ulima.incidenciaurbana.exception.TooManyAttemptsException.class)
+    public ResponseEntity<?> handleTooManyAttempts(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(com.ulima.incidenciaurbana.exception.EmailNotVerifiedException.class)
     public ResponseEntity<?> handleEmailNotVerified(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", ex.getMessage()));
@@ -52,13 +57,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleTypeMismatch(
             org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex) {
         return ResponseEntity.badRequest()
-                .body(Map.of("error", "Valor invalido para '" + ex.getName() + "': " + ex.getValue()));
+                .body(Map.of("error", "Valor inválido para '" + ex.getName() + "': " + ex.getValue()));
     }
 
     /** Cuerpo JSON mal formado o ausente. */
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
     public ResponseEntity<?> handleUnreadable(Exception ex) {
-        return ResponseEntity.badRequest().body(Map.of("error", "El cuerpo de la solicitud no es un JSON valido"));
+        return ResponseEntity.badRequest().body(Map.of("error", "El cuerpo de la solicitud no es un JSON válido"));
     }
 
     /** Parametro obligatorio ausente, p. ej. ?motivo= en rechazar. */
@@ -72,6 +77,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     public ResponseEntity<?> handleDataIntegrity(Exception ex) {
         return ResponseEntity.badRequest()
-                .body(Map.of("error", "Los datos no son validos o ya existen. Revisa la informacion enviada."));
+                .body(Map.of("error", "Los datos no son válidos o ya existen. Revisa la información enviada."));
     }
 }

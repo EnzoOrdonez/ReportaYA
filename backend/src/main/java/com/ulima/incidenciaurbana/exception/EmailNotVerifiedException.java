@@ -11,6 +11,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(HttpStatus.FORBIDDEN)
 public class EmailNotVerifiedException extends RuntimeException {
     public EmailNotVerifiedException() {
-        super("Debes verificar tu correo antes de iniciar sesion");
+        super("Debes verificar tu correo antes de iniciar sesión");
     }
 }

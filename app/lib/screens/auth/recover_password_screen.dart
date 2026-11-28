@@ -72,7 +72,7 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
         children: [
           PasswordResetTitle(
             palette: palette,
-            text: '¿Olvidaste tu contrasena?',
+            text: '¿Olvidaste tu contraseña?',
           ),
           const SizedBox(height: 10),
           PasswordResetSubtitle(

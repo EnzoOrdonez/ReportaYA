@@ -73,7 +73,7 @@ class FotoServiceImplTest {
     @DisplayName("Rechaza base64 invalido, archivo vacio y archivos de mas de 5 MB")
     void validaciones() {
         assertThatThrownBy(() -> servicio.subirFoto(5L, "%%%", TipoFoto.INICIAL, "x")).hasMessageContaining("base64");
-        assertThatThrownBy(() -> servicio.subirFoto(5L, "", TipoFoto.INICIAL, "x")).hasMessageContaining("vacia");
+        assertThatThrownBy(() -> servicio.subirFoto(5L, "", TipoFoto.INICIAL, "x")).hasMessageContaining("vacía");
         byte[] limite = new byte[5 * 1024 * 1024];
         System.arraycopy(PNG, 0, limite, 0, PNG.length);
         assertThatCode(() -> servicio.subirFoto(5L, b64(limite), TipoFoto.INICIAL, "x")).doesNotThrowAnyException();
